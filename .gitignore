@@ -1,0 +1,29 @@
+# PyCharm / IntelliJ IDE
+.idea/
+*.iml
+*.iws
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+ENV-py3/
+
+# Python Cache and Byte-code
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Local Data / LanceDB Storage
+# (Keeps your laptop's local vector database files out of GitHub)
+*.lancedb/
+data_storage/
+*.lance/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
