@@ -70,14 +70,10 @@ class GetProjectRecommendationsQueryHandler:
             logger.error(f"{error_msg} Details: {str(ex)}")
             raise EmbeddingServiceException(error_msg) from ex
 
-        # 3. Construct LanceDB SQL-style scalar filters to strip invalid records
-        # Enforce that only 'Approved' templates are considered for matching
-        filter_conditions = ["status = 'Approved'"]
-
+        # 3. Construct LanceDB SQL-style scalar filters based entirely on available domain metadata
+        filter_expression = None
         if query.restrict_to_major_id:
-            filter_conditions.append(f"major_id = '{str(query.restrict_to_major_id)}'")
-
-        filter_expression = " AND ".join(filter_conditions)
+            filter_expression = f"major_id = '{str(query.restrict_to_major_id)}'"
 
         # 4. Query nearest neighbor matches matching the exact interface tracking signature
         try:

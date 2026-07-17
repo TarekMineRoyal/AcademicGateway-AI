@@ -36,15 +36,15 @@ def format_project_document(
 
 
 def format_professor_advisor_query(
-        template: ProjectTemplate,
+        title: str,
+        description: str,
         major_name: Optional[str],
         specialty_name: Optional[str],
         skill_names: List[str]
 ) -> str:
     """
-    Translates a project template's requirements and objectives into a targeted
-    semantic search query to match against faculty professor profiles to find the
-    ideal academic supervisor.
+    Translates a project's core details into a targeted semantic search query
+    to match against faculty professor profiles to find the ideal supervisor.
     """
     major_text = f" in the {major_name} department" if major_name else ""
     specialty_text = f" focusing on {specialty_name}" if specialty_name else ""
@@ -53,7 +53,7 @@ def format_professor_advisor_query(
     return (
         f"Identify an academic faculty professor and research advisor{major_text}{specialty_text} "
         f"whose expert research interests, industry backgrounds, and current lab direction "
-        f"directly align with supervising a student project titled '{template.title}'. "
-        f"The project entails: {template.description}. "
+        f"directly align with supervising a student project titled '{title}'. "
+        f"The project entails: {description}. "
         f"The supervisor should have background relevant to these student competencies: [{skills_chunk}]."
     )

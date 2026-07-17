@@ -1,68 +1,77 @@
-import uuid
+import logging
 from pydantic import BaseModel
 
 from domain.models.major import Major
 from domain.models.specialty import Specialty
-from abc import ABC, abstractmethod
+from application.interfaces.vector_repositories import ICurriculumRepository
+from application.exceptions.application_exceptions import VectorRepositoryException
 
-
-class ICurriculumRepository(ABC):
-    """
-    Abstract interface contract for storing and looking up relational
-    academic structural definitions (Majors and Specialties).
-    """
-    @abstractmethod
-    def upsert_major(self, major: Major) -> None:
-        pass
-
-    @abstractmethod
-    def upsert_specialty(self, specialty: Specialty) -> None:
-        pass
-
-    # --- ADDED TO FIX LOOKUP ERRORS ---
-    @abstractmethod
-    def get_major_name(self, major_id: uuid.UUID) -> Optional[str]:
-        """Resolves a Major ID into its clean text string name for text formatting."""
-        pass
-
-    @abstractmethod
-    def get_specialty_names(self, specialty_ids: List[uuid.UUID]) -> List[str]:
-        """Resolves a collection of Specialty IDs into their text string names."""
-        pass
+logger = logging.getLogger(__name__)
 
 
 class SyncMajorCommand(BaseModel):
-    """DTO representing a primary academic major track update from C#."""
-    id: uuid.UUID
-    name: str
+    """
+    DTO representing a primary academic major track update from C#.
+    Uses a 'fat' DTO pattern to directly accept the materialized domain read-model.
+    """
+    major: Major
 
 
 class SyncSpecialtyCommand(BaseModel):
-    """DTO representing a narrow sub-track specialization update from C#."""
-    id: uuid.UUID
-    name: str
-    major_id: uuid.UUID
+    """
+    DTO representing a narrow sub-track specialization update from C#.
+    Uses a 'fat' DTO pattern to directly accept the materialized domain read-model.
+    """
+    specialty: Specialty
 
 
 class SyncMajorHandler:
     """Coordinates writing incoming Major lookup text mutations into storage."""
+
     def __init__(self, repository: ICurriculumRepository):
         self._repository = repository
 
     def handle(self, command: SyncMajorCommand) -> None:
-        major = Major(id=command.id, name=command.name)
-        self._repository.upsert_major(major)
+        """
+        Executes the synchronization pipeline for a Major entity.
+
+        Raises:
+            VectorRepositoryException: If the persistence layer fails.
+        """
+        major_id = command.major.id
+        logger.info(f"Starting synchronization pipeline for major ID: {major_id}")
+
+        try:
+            logger.debug(f"Upserting major record into storage: {major_id}")
+            self._repository.upsert_major(command.major)
+            logger.info(f"Successfully synchronized major space for: {major_id}")
+        except Exception as ex:
+            error_msg = f"Failed to persist major record for {major_id} into storage."
+            logger.error(f"{error_msg} Details: {str(ex)}")
+            raise VectorRepositoryException(error_msg) from ex
 
 
 class SyncSpecialtyHandler:
     """Coordinates writing incoming Specialty lookup text mutations into storage."""
+
     def __init__(self, repository: ICurriculumRepository):
         self._repository = repository
 
     def handle(self, command: SyncSpecialtyCommand) -> None:
-        specialty = Specialty(
-            id=command.id,
-            name=command.name,
-            major_id=command.major_id
-        )
-        self._repository.upsert_specialty(specialty)
+        """
+        Executes the synchronization pipeline for a Specialty entity.
+
+        Raises:
+            VectorRepositoryException: If the persistence layer fails.
+        """
+        specialty_id = command.specialty.id
+        logger.info(f"Starting synchronization pipeline for specialty ID: {specialty_id}")
+
+        try:
+            logger.debug(f"Upserting specialty record into storage: {specialty_id}")
+            self._repository.upsert_specialty(command.specialty)
+            logger.info(f"Successfully synchronized specialty space for: {specialty_id}")
+        except Exception as ex:
+            error_msg = f"Failed to persist specialty record for {specialty_id} into storage."
+            logger.error(f"{error_msg} Details: {str(ex)}")
+            raise VectorRepositoryException(error_msg) from ex

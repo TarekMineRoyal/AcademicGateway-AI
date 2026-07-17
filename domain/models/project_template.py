@@ -14,7 +14,6 @@ class ProjectTemplate(BaseModel):
     title: str
     description: str
     provider_id: uuid.UUID
-    status: str  # e.g., "Draft", "PendingReview", "Approved", "Rejected"
     created_at: datetime
 
     # Flattened targets for fast vector space filtering

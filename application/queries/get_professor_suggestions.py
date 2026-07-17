@@ -3,7 +3,6 @@ import uuid
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
-from domain.models.project_template import ProjectTemplate
 from application.interfaces.embedding_service import IEmbeddingService
 from application.interfaces.vector_repositories import IProfessorVectorRepository
 from application.services.formatters.project_template import format_professor_advisor_query
@@ -17,10 +16,11 @@ logger = logging.getLogger(__name__)
 
 class GetProfessorSuggestionsQuery(BaseModel):
     """
-    Query parameters for finding matching faculty advisors for a project template.
-    Accepts full structural blueprint data to build a stateless match vector.
+    Query parameters for finding matching faculty advisors for a project.
+    Follows the Stateless Searcher pattern by receiving flat textual context directly.
     """
-    template: ProjectTemplate
+    title: str = Field(..., description="The title of the project template.")
+    description: str = Field(..., description="The core scope and description of the project.")
     major_name: Optional[str] = Field(default=None, description="Descriptive name of the aligned major.")
     specialty_name: Optional[str] = Field(default=None, description="Descriptive name of the sub-track concentration.")
     skill_names: List[str] = Field(default_factory=list, description="Labels of required student skills.")
@@ -51,9 +51,10 @@ class GetProfessorSuggestionsQueryHandler:
         """
         logger.info("Executing professor advisor matchmaking query via stateless read-path.")
 
-        # 1. Format the blueprint details into a targeted advisor semantic search query string
+        # 1. Format the flat details into a targeted advisor semantic search query string
         query_prose = format_professor_advisor_query(
-            template=query.template,
+            title=query.title,
+            description=query.description,
             major_name=query.major_name,
             specialty_name=query.specialty_name,
             skill_names=query.skill_names
@@ -69,7 +70,6 @@ class GetProfessorSuggestionsQueryHandler:
             raise EmbeddingServiceException(error_msg) from ex
 
         # 3. Construct mandatory scalar pre-filters to exclude unavailable advisors
-        # Only query profiles that are explicitly flagged as accepting projects
         filter_expression = "is_accepting_projects = true"
 
         # 4. Perform similarity match using the exact repository interface contract

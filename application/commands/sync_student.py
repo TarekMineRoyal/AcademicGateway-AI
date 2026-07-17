@@ -4,7 +4,7 @@ from typing import List
 
 from domain.models.student import Student
 from application.interfaces.embedding_service import IEmbeddingService
-from application.interfaces.vector_repositories import IStructuredVectorRepository
+from application.interfaces.vector_repositories import IStudentVectorRepository
 from application.services.formatters.student import format_student_document
 from application.exceptions.application_exceptions import (
     EmbeddingServiceException,
@@ -34,7 +34,7 @@ class SyncStudentCommandHandler:
     def __init__(
             self,
             embedding_service: IEmbeddingService,
-            student_repository: IStructuredVectorRepository
+            student_repository: IStudentVectorRepository
     ):
         self._embedding_service = embedding_service
         self._student_repository = student_repository
