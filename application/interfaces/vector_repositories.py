@@ -6,7 +6,6 @@ from domain.models.skill import Skill
 from domain.models.student import Student
 from domain.models.project_template import ProjectTemplate
 from domain.models.professor import Professor
-from domain.models.research_interest import ResearchInterest
 
 
 class ISkillVectorRepository(ABC):
@@ -81,18 +80,4 @@ class IProfessorVectorRepository(ABC):
         Executes a vector search against professors combining similarity weights
         with scalar payload pre-filtering parameters.
         """
-        pass
-
-
-class IResearchInterestVectorRepository(ABC):
-    """Defines the abstract vector search contract for global Research Interest records."""
-
-    @abstractmethod
-    def upsert(self, research_interest: ResearchInterest, vector: List[float]) -> None:
-        """Saves or updates a research interest entity along with its vectorized area embedding."""
-        pass
-
-    @abstractmethod
-    def find_nearest(self, vector: List[float], limit: int = 10) -> List[uuid.UUID]:
-        """Finds the nearest research interest IDs based on vector cosine similarity math."""
         pass

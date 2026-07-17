@@ -10,7 +10,7 @@ class Student(BaseModel):
     """
     id: uuid.UUID
     full_name: str
-    major_ids: List[uuid.UUID] = Field(default_factory=list)
+    major_id: uuid.UUID
     specialty_ids: List[uuid.UUID] = Field(default_factory=list)
     skill_ids: List[uuid.UUID] = Field(default_factory=list)
 
