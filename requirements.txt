@@ -1,19 +1,29 @@
-# ==========================================
-# Core Vector Database
-# ==========================================
-lancedb>=0.34.0
-
-# ==========================================
-# AI & Embedding Pipeline
-# ==========================================
-pydantic>=2.10.0
-pydantic-settings~=2.14.2
-sentence-transformers>=5.6.0
-torch>=2.4.0
-nomic~=3.9.0
-
-# ==========================================
-# Web Framework & API (Communication with .NET)
-# ==========================================
-fastapi>=0.111.0
+# ==============================================================================
+# 🌐 Presentation Layer (FastAPI Web Engine)
+# ==============================================================================
+fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
+
+# ==============================================================================
+# ⚙️ Configuration & Data Validation Layer (Pydantic v2 Architecture)
+# ==============================================================================
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+
+# ==============================================================================
+# 🗄️ Infrastructure Layer (LanceDB Serverless Storage Engine)
+# ==============================================================================
+lancedb>=0.34.0
+pyarrow>=16.0.0
+
+# ==============================================================================
+# 🧠 Machine Learning & Local Text Vectorization
+# ==============================================================================
+sentence-transformers>=5.6.0
+
+# ------------------------------------------------------------------------------
+# 🏎️ GPU Hardware Acceleration (Targeting RTX 3050 VRAM via CUDA)
+# Note: When deploying outside of Docker, install the explicit CUDA wheels via:
+# pip install torch --index-url https://download.pytorch.org/whl/cu124
+# ------------------------------------------------------------------------------
+torch>=2.4.0

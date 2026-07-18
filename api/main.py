@@ -74,3 +74,5 @@ def health_check():
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"status": "unhealthy", "reason": str(ex)},
         )
+
+    # start using uvicorn api.main:app --reload --port 8000
