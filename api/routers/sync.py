@@ -1,1 +1,0 @@
-# Inbound webhook endpoints for C# mutations

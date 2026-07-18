@@ -1,1 +1,0 @@
-# Multi-dimensional similarity search endpoints

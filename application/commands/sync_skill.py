@@ -27,12 +27,12 @@ class SyncSkillHandler:
     Handles the synchronization transaction lifecycle for an individual skill asset.
     """
 
-    def __init__(self, embedder: IEmbeddingService, repository: ISkillVectorRepository):
+    def __init__(self, embedding_service: IEmbeddingService, skill_repository: ISkillVectorRepository):
         """
         Injects the abstract decoupled infrastructure layer boundaries.
         """
-        self._embedder = embedder
-        self._repository = repository
+        self._embedder = embedding_service
+        self._repository = skill_repository
 
     def handle(self, command: SyncSkillCommand) -> None:
         """
