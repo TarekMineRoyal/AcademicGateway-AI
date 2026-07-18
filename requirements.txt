@@ -7,8 +7,10 @@ lancedb>=0.34.0
 # AI & Embedding Pipeline
 # ==========================================
 pydantic>=2.10.0
+pydantic-settings~=2.14.2
 sentence-transformers>=5.6.0
 torch>=2.4.0
+nomic~=3.9.0
 
 # ==========================================
 # Web Framework & API (Communication with .NET)

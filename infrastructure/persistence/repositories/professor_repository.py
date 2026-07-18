@@ -1,0 +1,92 @@
+import uuid
+from typing import List, Optional
+
+from domain.models.professor import Professor
+from application.interfaces.vector_repositories import IProfessorVectorRepository
+from infrastructure.persistence.lancedb_client import lancedb_client
+from infrastructure.persistence.schema_registry import ProfessorTableSchema
+
+
+class ProfessorVectorRepository(IProfessorVectorRepository):
+    """
+    Concrete implementation of IProfessorVectorRepository using LanceDB.
+    Handles persistence and pre-filtered semantic matches for faculty member profiles.
+    """
+
+    def __init__(self, client=lancedb_client) -> None:
+        self._client = client
+        self._table_name = "professors"
+        self._table = None  # In-memory handle cache to avoid continuous disk I/O
+
+    def _get_table(self):
+        """
+        Lazily ensures the physical table exists and returns the active cached handle.
+        """
+        if self._table is not None:
+            return self._table
+
+        conn = self._client.get_connection()
+
+        # Check disk once; if it exists, open and cache it
+        if self._table_name in conn.table_names():
+            self._table = conn.open_table(self._table_name)
+            return self._table
+
+        # Otherwise, build the table and attach the critical scalar indices
+        table = conn.create_table(self._table_name, schema=ProfessorTableSchema)
+        table.create_scalar_index("id")  # Drastically accelerates upserts
+        table.create_scalar_index("is_accepting_projects")  # Optimizes active capacity pre-filtering
+        table.create_scalar_index("department")
+
+        self._table = table
+        return self._table
+
+    def upsert(self, professor: Professor, vector: List[float]) -> None:
+        """
+        Saves or updates a professor faculty profile with its interest embedding.
+        Uses LanceDB's high-speed merge_insert to ensure atomic upsert operations.
+        """
+        table = self._get_table()
+
+        # Translate pure domain model coordinates into the physical layout schema
+        db_record = ProfessorTableSchema(
+            id=str(professor.id),
+            full_name=professor.full_name,
+            department=professor.department,
+            rank=professor.rank,
+            is_accepting_projects=professor.is_accepting_projects,
+            research_interest_ids=[str(rid) for rid in professor.research_interest_ids],
+            about_me=professor.about_me,
+            vector=vector  # type: ignore
+        )
+
+        # Execute thread-safe upsert matching the stringified primary identifier
+        table.merge_insert(on="id") \
+            .when_matched_update_all() \
+            .when_not_matched_insert_all() \
+            .execute([db_record.model_dump()])
+
+    def find_nearest(
+        self,
+        vector: List[float],
+        filter_expression: Optional[str] = None,
+        limit: int = 10
+    ) -> List[uuid.UUID]:
+        """
+        Executes a vector search against professors combining similarity weights
+        with scalar payload pre-filtering parameters.
+        """
+        table = self._get_table()
+
+        # Initialize the base vector query builder sequence
+        query = table.search(vector)
+
+        # Apply SQL-style predicate pre-filtering BEFORE setting the slice limit
+        if filter_expression:
+            query = query.where(filter_expression, prefilter=True)
+
+        # Apply the final limit and execute the query builder pipeline
+        results = query.limit(limit).to_pydantic(ProfessorTableSchema)
+
+        # Map string identifiers back into pure tracking domain UUIDs
+        return [uuid.UUID(row.id) for row in results]

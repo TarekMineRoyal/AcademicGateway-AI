@@ -6,33 +6,6 @@ from domain.models.skill import Skill
 from domain.models.student import Student
 from domain.models.project_template import ProjectTemplate
 from domain.models.professor import Professor
-from domain.models.major import Major
-from domain.models.specialty import Specialty
-
-
-class ICurriculumRepository(ABC):
-    """
-    Abstract interface contract for storing and looking up relational
-    academic structural definitions (Majors and Specialties).
-    """
-
-    @abstractmethod
-    def upsert_major(self, major: Major) -> None:
-        pass
-
-    @abstractmethod
-    def upsert_specialty(self, specialty: Specialty) -> None:
-        pass
-
-    @abstractmethod
-    def get_major_name(self, major_id: uuid.UUID) -> Optional[str]:
-        """Resolves a Major ID into its clean text string name for text formatting."""
-        pass
-
-    @abstractmethod
-    def get_specialty_names(self, specialty_ids: List[uuid.UUID]) -> List[str]:
-        """Resolves a collection of Specialty IDs into their text string names."""
-        pass
 
 
 class ISkillVectorRepository(ABC):

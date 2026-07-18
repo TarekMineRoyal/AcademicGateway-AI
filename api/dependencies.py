@@ -1,0 +1,1 @@
+# FastAPI Dependency Injection container (wires Infra to App)
