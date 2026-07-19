@@ -1,5 +1,6 @@
 import uuid
 from typing import List, Optional
+import threading
 
 from domain.models.skill import Skill
 from application.interfaces.vector_repositories import ISkillVectorRepository
@@ -13,31 +14,33 @@ class SkillVectorRepository(ISkillVectorRepository):
     Handles the persistence, semantic queries, and batch resolution of technical skills.
     """
 
+    _repo_lock = threading.Lock()
+
     def __init__(self, client=lancedb_client) -> None:
         self._client = client
         self._table_name = "skills"
         self._table = None  # In-memory handle cache to avoid continuous disk I/O
 
     def _get_table(self):
-        """
-        Lazily ensures the physical table exists and returns the active cached handle.
-        """
         if self._table is not None:
             return self._table
 
         conn = self._client.get_connection()
 
-        # Check disk once; if it exists, open and cache it
         if self._table_name in conn.table_names():
             self._table = conn.open_table(self._table_name)
             return self._table
 
-        # Otherwise, build the table and attach the primary scalar index
-        table = conn.create_table(self._table_name, schema=SkillTableSchema)
-        table.create_scalar_index("id")  # Drastically accelerates upserts and batch queries
+        with self._repo_lock:
+            if self._table_name in conn.table_names():
+                self._table = conn.open_table(self._table_name)
+                return self._table
 
-        self._table = table
-        return self._table
+            table = conn.create_table(self._table_name, schema=SkillTableSchema)
+            table.create_scalar_index("id")
+
+            self._table = table
+            return self._table
 
     def upsert(self, skill: Skill, vector: List[float]) -> None:
         """

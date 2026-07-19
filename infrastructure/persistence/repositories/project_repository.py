@@ -1,5 +1,6 @@
 import uuid
 from typing import List, Optional
+import threading
 
 from domain.models.project_template import ProjectTemplate
 from application.interfaces.vector_repositories import IProjectTemplateVectorRepository
@@ -13,33 +14,35 @@ class ProjectTemplateVectorRepository(IProjectTemplateVectorRepository):
     Handles the mapping, persistence, and semantic searches for project blueprints.
     """
 
+    _repo_lock = threading.Lock()
+
     def __init__(self, client=lancedb_client) -> None:
         self._client = client
         self._table_name = "project_templates"
         self._table = None  # In-memory handle cache to avoid continuous disk I/O
 
     def _get_table(self):
-        """
-        Lazily ensures the physical table exists and returns the active cached handle.
-        """
         if self._table is not None:
             return self._table
 
         conn = self._client.get_connection()
 
-        # Check disk once; if it exists, open and cache it
         if self._table_name in conn.table_names():
             self._table = conn.open_table(self._table_name)
             return self._table
 
-        # Otherwise, build the table and attach the critical scalar indices
-        table = conn.create_table(self._table_name, schema=ProjectTemplateTableSchema)
-        table.create_scalar_index("id")  # Drastically accelerates upserts
-        table.create_scalar_index("major_id")  # Optimizes major-based read-path filtering
-        table.create_scalar_index("specialty_id")  # Optimizes specialty-based read-path filtering
+        with self._repo_lock:
+            if self._table_name in conn.table_names():
+                self._table = conn.open_table(self._table_name)
+                return self._table
 
-        self._table = table
-        return self._table
+            table = conn.create_table(self._table_name, schema=ProjectTemplateTableSchema)
+            table.create_scalar_index("id")
+            table.create_scalar_index("major_id")
+            table.create_scalar_index("specialty_id")
+
+            self._table = table
+            return self._table
 
     def upsert(self, template: ProjectTemplate, vector: List[float]) -> None:
         """
