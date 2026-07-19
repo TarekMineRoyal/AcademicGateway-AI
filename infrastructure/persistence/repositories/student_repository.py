@@ -1,6 +1,8 @@
 import uuid
 from typing import List, Optional
 import threading
+import lancedb
+from lancedb.index import BTree
 
 from domain.models.student import Student
 from application.interfaces.vector_repositories import IStudentVectorRepository
@@ -27,17 +29,17 @@ class StudentVectorRepository(IStudentVectorRepository):
 
         conn = self._client.get_connection()
 
-        if self._table_name in conn.table_names():
+        if self._table_name in conn.list_tables().tables:
             self._table = conn.open_table(self._table_name)
             return self._table
 
         with self._repo_lock:
-            if self._table_name in conn.table_names():
+            if self._table_name in conn.list_tables().tables:
                 self._table = conn.open_table(self._table_name)
                 return self._table
 
             table = conn.create_table(self._table_name, schema=StudentTableSchema)
-            table.create_scalar_index("id")
+            table.create_index("id", config=BTree())
 
             self._table = table
             return self._table

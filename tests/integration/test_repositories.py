@@ -55,12 +55,12 @@ def test_lazy_table_initialization_and_index_creation(ephemeral_client):
 
     # Verify the client returns a valid LanceDB connection instance (clears lancedb import warning)
     assert isinstance(conn, lancedb.DBConnection)
-    assert repo._table_name not in conn.table_names()
+    assert repo._table_name not in conn.list_tables().tables
 
     # Trigger lazy initialization
     table = repo._get_table()
 
-    assert repo._table_name in conn.table_names()
+    assert repo._table_name in conn.list_tables().tables
     assert table is not None
     assert repo._table is not None
 
@@ -207,7 +207,7 @@ def test_project_template_repository_upsert_and_find_nearest(ephemeral_client, m
 
     # Assert
     conn = ephemeral_client.get_connection()
-    assert project_repo._table_name in conn.table_names()
+    assert project_repo._table_name in conn.list_tables().tables
     assert len(matched_ids) == 1
     assert matched_ids[0] == project_id
 

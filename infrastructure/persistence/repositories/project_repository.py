@@ -1,6 +1,8 @@
 import uuid
 from typing import List, Optional
 import threading
+import lancedb
+from lancedb.index import BTree
 
 from domain.models.project_template import ProjectTemplate
 from application.interfaces.vector_repositories import IProjectTemplateVectorRepository
@@ -27,19 +29,19 @@ class ProjectTemplateVectorRepository(IProjectTemplateVectorRepository):
 
         conn = self._client.get_connection()
 
-        if self._table_name in conn.table_names():
+        if self._table_name in conn.list_tables().tables:
             self._table = conn.open_table(self._table_name)
             return self._table
 
         with self._repo_lock:
-            if self._table_name in conn.table_names():
+            if self._table_name in conn.list_tables().tables:
                 self._table = conn.open_table(self._table_name)
                 return self._table
 
             table = conn.create_table(self._table_name, schema=ProjectTemplateTableSchema)
-            table.create_scalar_index("id")
-            table.create_scalar_index("major_id")
-            table.create_scalar_index("specialty_id")
+            table.create_index("id", config=BTree())
+            table.create_index("major_id", config=BTree())
+            table.create_index("specialty_id", config=BTree())
 
             self._table = table
             return self._table

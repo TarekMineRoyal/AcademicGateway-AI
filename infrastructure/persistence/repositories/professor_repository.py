@@ -1,6 +1,8 @@
 import uuid
 from typing import List, Optional
 import threading
+import lancedb
+from lancedb.index import BTree
 
 from domain.models.professor import Professor
 from application.interfaces.vector_repositories import IProfessorVectorRepository
@@ -31,20 +33,20 @@ class ProfessorVectorRepository(IProfessorVectorRepository):
 
         conn = self._client.get_connection()
 
-        if self._table_name in conn.table_names():
+        if self._table_name in conn.list_tables().tables:
             self._table = conn.open_table(self._table_name)
             return self._table
 
         with self._repo_lock:
             # Double-check inside the thread guard block
-            if self._table_name in conn.table_names():
+            if self._table_name in conn.list_tables().tables:
                 self._table = conn.open_table(self._table_name)
                 return self._table
 
             table = conn.create_table(self._table_name, schema=ProfessorTableSchema)
-            table.create_scalar_index("id")
-            table.create_scalar_index("is_accepting_projects")
-            table.create_scalar_index("department")
+            table.create_index("id", config=BTree())
+            table.create_index("is_accepting_projects", config=BTree())
+            table.create_index("department", config=BTree())
 
             self._table = table
             return self._table
