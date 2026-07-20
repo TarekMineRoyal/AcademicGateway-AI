@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     NOMIC_API_KEY: Optional[str] = None
     NOMIC_MODEL_NAME: str = "nomic-ai/nomic-embed-text-v1.5"
     EMBEDDING_DIMENSION: int = 768
+    BATCH_CHUNK_SIZE: int = 128
 
     # Compute Hardware Configuration
     # Defaults to "cuda" if hardware supports it, allowing runtime override via ENV

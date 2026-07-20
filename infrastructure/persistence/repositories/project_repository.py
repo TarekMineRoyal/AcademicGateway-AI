@@ -1,11 +1,11 @@
+import threading
 import uuid
 from typing import List, Optional
-import threading
-import lancedb
+
 from lancedb.index import BTree
 
-from domain.models.project_template import ProjectTemplate
 from application.interfaces.vector_repositories import IProjectTemplateVectorRepository
+from domain.models.project_template import ProjectTemplate
 from infrastructure.persistence.lancedb_client import lancedb_client
 from infrastructure.persistence.schema_registry import ProjectTemplateTableSchema
 
@@ -18,10 +18,18 @@ class ProjectTemplateVectorRepository(IProjectTemplateVectorRepository):
 
     _repo_lock = threading.Lock()
 
-    def __init__(self, client=lancedb_client) -> None:
+    def __init__(self, table_name: Optional[str] = None, client=lancedb_client) -> None:
         self._client = client
-        self._table_name = "project_templates"
+        self._table_name = table_name or "project_templates"
         self._table = None  # In-memory handle cache to avoid continuous disk I/O
+
+    def reload_table(self) -> None:
+        """
+        Invalidates the cached table handle so subsequent calls re-fetch
+        the active table connection (e.g., following a Blue/Green swap).
+        """
+        with self._repo_lock:
+            self._table = None
 
     def _get_table(self):
         if self._table is not None:
@@ -71,6 +79,37 @@ class ProjectTemplateVectorRepository(IProjectTemplateVectorRepository):
             .when_matched_update_all() \
             .when_not_matched_insert_all() \
             .execute([db_record.model_dump()])
+
+    def bulk_upsert(
+        self, templates: List[ProjectTemplate], vectors: List[List[float]]
+    ) -> None:
+        """
+        Bulk upserts multiple project templates with their corresponding vectors in a single batch.
+        """
+        if not templates:
+            return
+
+        table = self._get_table()
+
+        records = [
+            ProjectTemplateTableSchema(
+                id=str(tmpl.id),
+                title=tmpl.title,
+                description=tmpl.description,
+                provider_id=str(tmpl.provider_id),
+                created_at=tmpl.created_at,
+                skill_ids=[str(sid) for sid in tmpl.skill_ids],
+                major_id=str(tmpl.major_id) if tmpl.major_id else None,
+                specialty_id=str(tmpl.specialty_id) if tmpl.specialty_id else None,
+                vector=vec,  # type: ignore
+            ).model_dump()
+            for tmpl, vec in zip(templates, vectors)
+        ]
+
+        table.merge_insert(on="id") \
+            .when_matched_update_all() \
+            .when_not_matched_insert_all() \
+            .execute(records)
 
     def find_nearest(
         self,

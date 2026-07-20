@@ -1,11 +1,11 @@
+import threading
 import uuid
 from typing import List, Optional
-import threading
-import lancedb
+
 from lancedb.index import BTree
 
-from domain.models.student import Student
 from application.interfaces.vector_repositories import IStudentVectorRepository
+from domain.models.student import Student
 from infrastructure.persistence.lancedb_client import lancedb_client
 from infrastructure.persistence.schema_registry import StudentTableSchema
 
@@ -18,10 +18,18 @@ class StudentVectorRepository(IStudentVectorRepository):
 
     _repo_lock = threading.Lock()
 
-    def __init__(self, client=lancedb_client) -> None:
+    def __init__(self, table_name: Optional[str] = None, client=lancedb_client) -> None:
         self._client = client
-        self._table_name = "students"
+        self._table_name = table_name or "students"
         self._table = None  # In-memory handle cache to avoid continuous disk I/O
+
+    def reload_table(self) -> None:
+        """
+        Invalidates the cached table handle so subsequent calls re-fetch
+        the active table connection (e.g., following a Blue/Green swap).
+        """
+        with self._repo_lock:
+            self._table = None
 
     def _get_table(self):
         if self._table is not None:
@@ -59,7 +67,7 @@ class StudentVectorRepository(IStudentVectorRepository):
             specialty_ids=[str(sid) for sid in student.specialty_ids],
             skill_ids=[str(sid) for sid in student.skill_ids],
             about_me=student.about_me,
-            vector=vector # type: ignore
+            vector=vector  # type: ignore
         )
 
         # Execute thread-safe upsert matching the stringified primary identifier.
@@ -68,6 +76,33 @@ class StudentVectorRepository(IStudentVectorRepository):
             .when_matched_update_all() \
             .when_not_matched_insert_all() \
             .execute([db_record.model_dump()])
+
+    def bulk_upsert(self, students: List[Student], vectors: List[List[float]]) -> None:
+        """
+        Bulk upserts multiple student records with their corresponding vectors in a single batch.
+        """
+        if not students:
+            return
+
+        table = self._get_table()
+
+        records = [
+            StudentTableSchema(
+                id=str(st.id),
+                full_name=st.full_name,
+                major_id=str(st.major_id),
+                specialty_ids=[str(sid) for sid in st.specialty_ids],
+                skill_ids=[str(sid) for sid in st.skill_ids],
+                about_me=st.about_me,
+                vector=vec,  # type: ignore
+            ).model_dump()
+            for st, vec in zip(students, vectors)
+        ]
+
+        table.merge_insert(on="id") \
+            .when_matched_update_all() \
+            .when_not_matched_insert_all() \
+            .execute(records)
 
     def get_by_id(self, student_id: uuid.UUID) -> Optional[Student]:
         """

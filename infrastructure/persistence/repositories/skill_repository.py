@@ -1,11 +1,11 @@
+import threading
 import uuid
 from typing import List, Optional
-import threading
-import lancedb
+
 from lancedb.index import BTree
 
-from domain.models.skill import Skill
 from application.interfaces.vector_repositories import ISkillVectorRepository
+from domain.models.skill import Skill
 from infrastructure.persistence.lancedb_client import lancedb_client
 from infrastructure.persistence.schema_registry import SkillTableSchema
 
@@ -18,10 +18,18 @@ class SkillVectorRepository(ISkillVectorRepository):
 
     _repo_lock = threading.Lock()
 
-    def __init__(self, client=lancedb_client) -> None:
+    def __init__(self, table_name: Optional[str] = None, client=lancedb_client) -> None:
         self._client = client
-        self._table_name = "skills"
+        self._table_name = table_name or "skills"
         self._table = None  # In-memory handle cache to avoid continuous disk I/O
+
+    def reload_table(self) -> None:
+        """
+        Invalidates the cached table handle so subsequent calls re-fetch
+        the active table connection (e.g., following a Blue/Green swap).
+        """
+        with self._repo_lock:
+            self._table = None
 
     def _get_table(self):
         if self._table is not None:
@@ -63,6 +71,29 @@ class SkillVectorRepository(ISkillVectorRepository):
             .when_matched_update_all() \
             .when_not_matched_insert_all() \
             .execute([db_record.model_dump()])
+
+    def bulk_upsert(self, skills: List[Skill], vectors: List[List[float]]) -> None:
+        """
+        Bulk upserts multiple skill records with their corresponding vectors in a single batch.
+        """
+        if not skills:
+            return
+
+        table = self._get_table()
+
+        records = [
+            SkillTableSchema(
+                id=str(sk.id),
+                name=sk.name,
+                vector=vec,  # type: ignore
+            ).model_dump()
+            for sk, vec in zip(skills, vectors)
+        ]
+
+        table.merge_insert(on="id") \
+            .when_matched_update_all() \
+            .when_not_matched_insert_all() \
+            .execute(records)
 
     def find_nearest(
         self,
