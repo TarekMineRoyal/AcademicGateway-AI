@@ -1,6 +1,9 @@
+import logging
 import threading
 import lancedb
 from infrastructure.config.settings import settings
+
+logger = logging.getLogger(__name__)
 
 
 class LanceDbClient:
@@ -26,8 +29,14 @@ class LanceDbClient:
             with self._lock:
                 # Double-checked lock pattern to prevent simultaneous allocations
                 if self._connection is None:
-                    # Natively creates local directories or resolves cloud URIs automatically
-                    self._connection = lancedb.connect(self._uri)
+                    try:
+                        logger.info(f"Initializing LanceDB connection at URI: {self._uri}")
+                        # Natively creates local directories or resolves cloud URIs automatically
+                        self._connection = lancedb.connect(self._uri)
+                        logger.info("LanceDB connection established successfully.")
+                    except Exception as ex:
+                        logger.error(f"Failed to connect to LanceDB at {self._uri}: {ex}")
+                        raise
 
         return self._connection
 
@@ -44,10 +53,16 @@ class LanceDbClient:
         with self._lock:
             tables = conn.list_tables().tables
             if source_table_name in tables:
+                logger.info(f"Swapping table '{source_table_name}' -> '{target_table_name}'")
                 source_table = conn.open_table(source_table_name)
                 arrow_data = source_table.to_arrow()
                 conn.create_table(target_table_name, data=arrow_data, mode="overwrite")
                 conn.drop_table(source_table_name)
+                logger.info(f"Successfully promoted '{source_table_name}' to '{target_table_name}'.")
+            else:
+                logger.warning(
+                    f"Table swap aborted: Source table '{source_table_name}' does not exist."
+                )
 
 
 # Instantiate a centralized client instance to manage connection sharing
