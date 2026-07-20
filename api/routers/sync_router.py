@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, status
 
 # ---- Dependency Graph Providers ----
@@ -6,6 +7,10 @@ from api.dependencies import (
     get_bulk_sync_project_handler,
     get_bulk_sync_skill_handler,
     get_bulk_sync_student_handler,
+    get_delete_professor_handler,
+    get_delete_project_handler,
+    get_delete_skill_handler,
+    get_delete_student_handler,
     get_sync_professor_handler,
     get_sync_project_handler,
     get_sync_skill_handler,
@@ -43,6 +48,24 @@ from application.commands.bulk_sync_skill import (
 from application.commands.bulk_sync_student import (
     BulkSyncStudentCommand,
     BulkSyncStudentCommandHandler,
+)
+
+# ---- CQRS Deletion Command Schema Handlers & DTOs ----
+from application.commands.delete_professor import (
+    DeleteProfessorCommand,
+    DeleteProfessorCommandHandler,
+)
+from application.commands.delete_project import (
+    DeleteProjectCommand,
+    DeleteProjectCommandHandler,
+)
+from application.commands.delete_skill import (
+    DeleteSkillCommand,
+    DeleteSkillHandler,
+)
+from application.commands.delete_student import (
+    DeleteStudentCommand,
+    DeleteStudentCommandHandler,
 )
 
 router = APIRouter()
@@ -212,3 +235,84 @@ async def bulk_sync_skill(
         "status": "accepted",
         "message": f"Bulk skill synchronization pipeline queued for {len(command.items)} records.",
     }
+
+
+# ==============================================================================
+# DELETION ENDPOINTS (Data Destruction)
+# ==============================================================================
+
+
+@router.delete(
+    "/student/{student_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Purges a student profile vector space node.",
+)
+async def delete_student(
+    student_id: uuid.UUID,
+    handler: DeleteStudentCommandHandler = Depends(get_delete_student_handler),
+):
+    """
+    Removes a student profile from the LanceDB vector store by its primary UUID.
+    Execution is idempotent: non-existent IDs resolve safely with HTTP 200 OK.
+    """
+    command = DeleteStudentCommand(id=student_id)
+    handler.handle(command)
+    return {"message": f"Student {student_id} successfully purged from vector database."}
+
+
+@router.delete(
+    "/project/{project_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Purges a project blueprint vector space node.",
+)
+async def delete_project(
+    project_id: uuid.UUID,
+    handler: DeleteProjectCommandHandler = Depends(get_delete_project_handler),
+):
+    """
+    Removes a project template blueprint from the LanceDB vector store by its primary UUID.
+    Execution is idempotent: non-existent IDs resolve safely with HTTP 200 OK.
+    """
+    command = DeleteProjectCommand(id=project_id)
+    handler.handle(command)
+    return {
+        "message": f"Project template {project_id} successfully purged from vector database."
+    }
+
+
+@router.delete(
+    "/professor/{professor_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Purges a professor faculty vector space node.",
+)
+async def delete_professor(
+    professor_id: uuid.UUID,
+    handler: DeleteProfessorCommandHandler = Depends(get_delete_professor_handler),
+):
+    """
+    Removes a professor faculty profile from the LanceDB vector store by its primary UUID.
+    Execution is idempotent: non-existent IDs resolve safely with HTTP 200 OK.
+    """
+    command = DeleteProfessorCommand(id=professor_id)
+    handler.handle(command)
+    return {
+        "message": f"Professor {professor_id} successfully purged from vector database."
+    }
+
+
+@router.delete(
+    "/skill/{skill_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Purges a global competency vector space node.",
+)
+async def delete_skill(
+    skill_id: uuid.UUID,
+    handler: DeleteSkillHandler = Depends(get_delete_skill_handler),
+):
+    """
+    Removes a technical skill capability from the LanceDB vector store by its primary UUID.
+    Execution is idempotent: non-existent IDs resolve safely with HTTP 200 OK.
+    """
+    command = DeleteSkillCommand(id=skill_id)
+    handler.handle(command)
+    return {"message": f"Skill {skill_id} successfully purged from vector database."}

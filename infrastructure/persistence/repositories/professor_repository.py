@@ -13,7 +13,7 @@ from infrastructure.persistence.schema_registry import ProfessorTableSchema
 class ProfessorVectorRepository(IProfessorVectorRepository):
     """
     Concrete implementation of IProfessorVectorRepository using LanceDB.
-    Handles persistence and pre-filtered semantic matches for faculty member profiles.
+    Handles persistence, pre-filtered semantic matches, and deletion for faculty member profiles.
     """
 
     _repo_lock = threading.Lock()
@@ -113,6 +113,14 @@ class ProfessorVectorRepository(IProfessorVectorRepository):
             .when_matched_update_all() \
             .when_not_matched_insert_all() \
             .execute(records)
+
+    def delete(self, entity_id: uuid.UUID) -> None:
+        """
+        Removes a professor profile vector record from persistent storage by its unique ID.
+        Execution is natively idempotent in LanceDB.
+        """
+        table = self._get_table()
+        table.delete(f"id = '{str(entity_id)}'")
 
     def find_nearest(
         self,

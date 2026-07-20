@@ -21,6 +21,12 @@ from application.commands.bulk_sync_project import BulkSyncProjectCommandHandler
 from application.commands.bulk_sync_skill import BulkSyncSkillCommandHandler
 from application.commands.bulk_sync_student import BulkSyncStudentCommandHandler
 
+# ---- Application CQRS Deletion Command Handlers ----
+from application.commands.delete_professor import DeleteProfessorCommandHandler
+from application.commands.delete_project import DeleteProjectCommandHandler
+from application.commands.delete_skill import DeleteSkillHandler
+from application.commands.delete_student import DeleteStudentCommandHandler
+
 # ---- Application CQRS Query Handlers (Read-Path) ----
 from application.queries.get_professor_suggestions import (
     GetProfessorSuggestionsQueryHandler,
@@ -159,6 +165,33 @@ def get_bulk_sync_student_handler(
     return BulkSyncStudentCommandHandler(
         embedding_service=embedder, student_repository=repository
     )
+
+
+# ==============================================================================
+# CQRS DELETION COMMAND HANDLER PROVIDERS (Write-Path Deletions)
+# ==============================================================================
+def get_delete_professor_handler(
+    repository: IProfessorVectorRepository = Depends(get_professor_repository),
+) -> DeleteProfessorCommandHandler:
+    return DeleteProfessorCommandHandler(professor_repository=repository)
+
+
+def get_delete_project_handler(
+    repository: IProjectTemplateVectorRepository = Depends(get_project_repository),
+) -> DeleteProjectCommandHandler:
+    return DeleteProjectCommandHandler(project_repository=repository)
+
+
+def get_delete_skill_handler(
+    repository: ISkillVectorRepository = Depends(get_skill_repository),
+) -> DeleteSkillHandler:
+    return DeleteSkillHandler(skill_repository=repository)
+
+
+def get_delete_student_handler(
+    repository: IStudentVectorRepository = Depends(get_student_repository),
+) -> DeleteStudentCommandHandler:
+    return DeleteStudentCommandHandler(student_repository=repository)
 
 
 # ==============================================================================

@@ -13,7 +13,7 @@ from infrastructure.persistence.schema_registry import ProjectTemplateTableSchem
 class ProjectTemplateVectorRepository(IProjectTemplateVectorRepository):
     """
     Concrete implementation of IProjectTemplateVectorRepository using LanceDB.
-    Handles the mapping, persistence, and semantic searches for project blueprints.
+    Handles the mapping, persistence, semantic searches, and deletion for project blueprints.
     """
 
     _repo_lock = threading.Lock()
@@ -110,6 +110,14 @@ class ProjectTemplateVectorRepository(IProjectTemplateVectorRepository):
             .when_matched_update_all() \
             .when_not_matched_insert_all() \
             .execute(records)
+
+    def delete(self, entity_id: uuid.UUID) -> None:
+        """
+        Removes a project blueprint vector record from persistent storage by its unique ID.
+        Execution is natively idempotent in LanceDB.
+        """
+        table = self._get_table()
+        table.delete(f"id = '{str(entity_id)}'")
 
     def find_nearest(
         self,

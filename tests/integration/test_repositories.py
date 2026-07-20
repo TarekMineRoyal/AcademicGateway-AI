@@ -356,3 +356,75 @@ def test_blue_green_table_swap_and_cache_reload(ephemeral_client, mock_vector):
     swapped_results = live_repo.find_nearest(mock_vector, limit=10)
     assert prof_new.id in swapped_results
     assert prof_old.id not in swapped_results
+
+def test_repository_deletion_and_idempotency(ephemeral_client, mock_vector):
+    """Verify that delete() purges records from LanceDB and missing IDs do not raise errors."""
+    student_repo = StudentVectorRepository(client=ephemeral_client)
+    prof_repo = ProfessorVectorRepository(client=ephemeral_client)
+    project_repo = ProjectTemplateVectorRepository(client=ephemeral_client)
+    skill_repo = SkillVectorRepository(client=ephemeral_client)
+
+    student_id = uuid.uuid4()
+    prof_id = uuid.uuid4()
+    project_id = uuid.uuid4()
+    skill_id = uuid.uuid4()
+
+    # 1. Seed records
+    student = Student(
+        id=student_id,
+        full_name="Delete Me",
+        major_id=uuid.uuid4(),
+        specialty_ids=[],
+        skill_ids=[],
+        about_me="Temp student",
+    )
+    prof = Professor(
+        id=prof_id,
+        full_name="Prof Delete",
+        department="CS",
+        rank="Professor",
+        is_accepting_projects=True,
+        research_interest_ids=[],
+        about_me="Temp prof",
+    )
+    project = ProjectTemplate(
+        id=project_id,
+        title="Temp Project",
+        description="Temp desc",
+        provider_id=uuid.uuid4(),
+        created_at=datetime.now(timezone.utc),
+        skill_ids=[],
+        major_id=None,
+        specialty_id=None,
+    )
+    skill = Skill(id=skill_id, name="Temp Skill")
+
+    student_repo.upsert(student, mock_vector)
+    prof_repo.upsert(prof, mock_vector)
+    project_repo.upsert(project, mock_vector)
+    skill_repo.upsert(skill, mock_vector)
+
+    # Verify seed insertion
+    assert student_repo.get_by_id(student_id) is not None
+    assert prof_id in prof_repo.find_nearest(mock_vector, limit=5)
+    assert project_id in project_repo.find_nearest(mock_vector, limit=5)
+    assert skill_id in skill_repo.find_nearest(mock_vector, limit=5)
+
+    # 2. Execute deletions
+    student_repo.delete(student_id)
+    prof_repo.delete(prof_id)
+    project_repo.delete(project_id)
+    skill_repo.delete(skill_id)
+
+    # Verify purge
+    assert student_repo.get_by_id(student_id) is None
+    assert prof_id not in prof_repo.find_nearest(mock_vector, limit=5)
+    assert project_id not in project_repo.find_nearest(mock_vector, limit=5)
+    assert skill_id not in skill_repo.find_nearest(mock_vector, limit=5)
+
+    # 3. Idempotency Check: Deleting non-existent IDs should execute smoothly without crashing
+    random_id = uuid.uuid4()
+    student_repo.delete(random_id)
+    prof_repo.delete(random_id)
+    project_repo.delete(random_id)
+    skill_repo.delete(random_id)

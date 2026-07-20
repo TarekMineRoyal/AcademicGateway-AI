@@ -17,6 +17,14 @@ from application.exceptions.application_exceptions import (
 )
 from infrastructure.persistence.lancedb_client import lancedb_client
 
+import uuid
+from api.dependencies import (
+    get_delete_professor_handler,
+    get_delete_project_handler,
+    get_delete_skill_handler,
+    get_delete_student_handler,
+)
+
 pytestmark = pytest.mark.api
 
 
@@ -129,5 +137,40 @@ def test_bulk_sync_endpoints_return_202_accepted(
         json_data = response.json()
         assert json_data["status"] == "accepted"
         assert "message" in json_data
+    finally:
+        app.dependency_overrides.clear()
+
+# ============================================================================
+# DELETION API BOUNDARY TESTS
+# ============================================================================
+
+
+@pytest.mark.parametrize(
+    "endpoint_template, dependency_func",
+    [
+        ("/api/v1/sync/student/{id}", get_delete_student_handler),
+        ("/api/v1/sync/project/{id}", get_delete_project_handler),
+        ("/api/v1/sync/professor/{id}", get_delete_professor_handler),
+        ("/api/v1/sync/skill/{id}", get_delete_skill_handler),
+    ],
+)
+def test_delete_endpoints_return_200_ok(
+    api_client, endpoint_template, dependency_func
+):
+    """Verify that all DELETE /api/v1/sync/*/{id} endpoints execute and return HTTP 200 OK."""
+    mock_handler = MagicMock()
+    app.dependency_overrides[dependency_func] = lambda: mock_handler
+
+    target_id = uuid.uuid4()
+    endpoint = endpoint_template.format(id=target_id)
+
+    try:
+        response = api_client.delete(endpoint)
+
+        assert response.status_code == status.HTTP_200_OK
+        json_data = response.json()
+        assert "message" in json_data
+        assert str(target_id) in json_data["message"]
+        assert mock_handler.handle.call_count == 1
     finally:
         app.dependency_overrides.clear()

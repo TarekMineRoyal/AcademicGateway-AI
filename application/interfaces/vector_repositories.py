@@ -25,6 +25,11 @@ class ISkillVectorRepository(ABC):
         pass
 
     @abstractmethod
+    def delete(self, entity_id: uuid.UUID) -> None:
+        """Removes a skill vector node from persistent storage by its unique ID."""
+        pass
+
+    @abstractmethod
     def find_nearest(self, vector: List[float], limit: int = 10) -> List[uuid.UUID]:
         pass
 
@@ -49,6 +54,11 @@ class IStudentVectorRepository(ABC):
     @abstractmethod
     def bulk_upsert(self, students: List[Student], vectors: List[List[float]]) -> None:
         """Bulk upserts multiple student records with their corresponding vectors."""
+        pass
+
+    @abstractmethod
+    def delete(self, entity_id: uuid.UUID) -> None:
+        """Removes a student profile vector node from persistent storage by its unique ID."""
         pass
 
     @abstractmethod
@@ -79,6 +89,11 @@ class IProjectTemplateVectorRepository(ABC):
         self, templates: List[ProjectTemplate], vectors: List[List[float]]
     ) -> None:
         """Bulk upserts multiple project templates with their corresponding vectors."""
+        pass
+
+    @abstractmethod
+    def delete(self, entity_id: uuid.UUID) -> None:
+        """Removes a project blueprint vector node from persistent storage by its unique ID."""
         pass
 
     @abstractmethod
@@ -117,6 +132,11 @@ class IProfessorVectorRepository(ABC):
         self, professors: List[Professor], vectors: List[List[float]]
     ) -> None:
         """Bulk upserts multiple professor records with their corresponding vectors."""
+        pass
+
+    @abstractmethod
+    def delete(self, entity_id: uuid.UUID) -> None:
+        """Removes a professor profile vector node from persistent storage by its unique ID."""
         pass
 
     @abstractmethod

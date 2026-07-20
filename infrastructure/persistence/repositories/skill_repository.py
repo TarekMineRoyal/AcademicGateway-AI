@@ -13,7 +13,7 @@ from infrastructure.persistence.schema_registry import SkillTableSchema
 class SkillVectorRepository(ISkillVectorRepository):
     """
     Concrete implementation of ISkillVectorRepository using LanceDB.
-    Handles the persistence, semantic queries, and batch resolution of technical skills.
+    Handles the persistence, semantic queries, batch resolution, and deletion of technical skills.
     """
 
     _repo_lock = threading.Lock()
@@ -94,6 +94,14 @@ class SkillVectorRepository(ISkillVectorRepository):
             .when_matched_update_all() \
             .when_not_matched_insert_all() \
             .execute(records)
+
+    def delete(self, entity_id: uuid.UUID) -> None:
+        """
+        Removes a skill vector record from persistent storage by its unique ID.
+        Execution is natively idempotent in LanceDB.
+        """
+        table = self._get_table()
+        table.delete(f"id = '{str(entity_id)}'")
 
     def find_nearest(
         self,

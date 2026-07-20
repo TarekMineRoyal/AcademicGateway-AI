@@ -13,7 +13,7 @@ from infrastructure.persistence.schema_registry import StudentTableSchema
 class StudentVectorRepository(IStudentVectorRepository):
     """
     Concrete implementation of IStudentVectorRepository using LanceDB.
-    Handles the mapping, persistence, and lookup of vectorized student read-models.
+    Handles the mapping, persistence, lookup, and deletion of vectorized student read-models.
     """
 
     _repo_lock = threading.Lock()
@@ -103,6 +103,14 @@ class StudentVectorRepository(IStudentVectorRepository):
             .when_matched_update_all() \
             .when_not_matched_insert_all() \
             .execute(records)
+
+    def delete(self, entity_id: uuid.UUID) -> None:
+        """
+        Removes a student profile vector record from persistent storage by its unique ID.
+        Execution is natively idempotent in LanceDB.
+        """
+        table = self._get_table()
+        table.delete(f"id = '{str(entity_id)}'")
 
     def get_by_id(self, student_id: uuid.UUID) -> Optional[Student]:
         """
