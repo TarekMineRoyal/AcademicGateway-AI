@@ -1,12 +1,16 @@
 # 🎓 AcademicGateway-AI
 
-> High-performance, localized vector matchmaking and semantic search microservice powering the **AcademicGateway** recommendation engine.
+> High-performance, localized vector matchmaking and semantic search microservice powering the [AcademicGateway](https://github.com/TarekMineRoyal/AcademicGateway) recommendation engine.
 
 `AcademicGateway-AI` is built with **FastAPI**, **LanceDB**, and local **Nomic-Embed-Text** embeddings accelerated via **PyTorch**. It provides real-time vector synchronization, zero-downtime Blue/Green bulk ingestion, data destruction, and multi-entity semantic matchmaking for students, professors, project blueprints, and technical skills.
 
 ---
 
 ## 🏗 Architecture Highlights
+### 🌐 System Integration
+This service is a dedicated AI sidecar for the main **[AcademicGateway](https://github.com/TarekMineRoyal/AcademicGateway)** platform:
+* **AcademicGateway (Main App):** Manages user authentication, relational state (PostgreSQL), and core business workflow.
+* **AcademicGateway-AI (This Repo):** Offloads compute-heavy embedding generation, vector storage in LanceDB, and semantic similarity search.
 
 The microservice is built around clean architectural patterns to guarantee high throughput, strict operational isolation, and protection for hardware resources:
 
@@ -191,3 +195,24 @@ pytest tests/smoke/
 
 ### Interactive Swagger UI
 When running locally, FastAPI generates interactive OpenAPI documentation at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+---
+
+## 🔗 Related Repositories
+
+| Repository | Description |
+| :--- | :--- |
+| **[AcademicGateway](https://github.com/TarekMineRoyal/AcademicGateway)** | Primary web application and backend platform. |
+| **[AcademicGateway-AI](https://github.com/TarekMineRoyal/AcademicGateway-AI)** | Vector search and semantic matchmaking microservice *(this repository)*. |
+
+---
+
+## 🌐 Project Ecosystem
+
+This microservice is one component of the broader **AcademicGateway** platform:
+
+| Repository | Role | Direct Connection to this Service? |
+| :--- | :--- | :--- |
+| **[AcademicGateway](https://github.com/TarekMineRoyal/AcademicGateway)** | Main Application & Core API | **Yes** — Sends `/sync` requests and executes `/search` queries. |
+| **[AcademicGateway-Frontend](https://github.com/TarekMineRoyal/AcademicGateway-Frontend)** | User Interface | **No** — Interacts solely with the main application. |
+| **[AcademicGateway-AI](https://github.com/TarekMineRoyal/AcademicGateway-AI)** | Vector Search Microservice | *(This repository)* |
