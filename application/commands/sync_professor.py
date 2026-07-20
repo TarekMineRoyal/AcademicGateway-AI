@@ -51,7 +51,9 @@ class SyncProfessorCommandHandler:
             VectorRepositoryException: If the LanceDB persistence layer fails.
         """
         professor_id = command.professor.id
-        logger.info(f"Starting synchronization pipeline for professor ID: {professor_id}")
+        logger.info(
+            f"Starting synchronization pipeline for professor ID: {professor_id} ({command.professor.full_name})"
+        )
 
         # 1. Compile institutional variables and interest fields into a unified prose document
         prose_document = format_professor_document(

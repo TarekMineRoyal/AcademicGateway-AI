@@ -46,7 +46,7 @@ class SyncSkillHandler:
             VectorRepositoryException: If the LanceDB persistence layer fails.
         """
         skill_id = command.skill.id
-        logger.info(f"Starting synchronization pipeline for skill ID: {skill_id}")
+        logger.info(f"Starting synchronization pipeline for skill ID: {skill_id} ({command.skill.name})")
 
         # 1. Compile entity attributes into a clean prose paragraph text block
         narrative_document = format_skill_document(command.skill)

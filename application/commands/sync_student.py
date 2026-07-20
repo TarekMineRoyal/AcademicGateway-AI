@@ -48,7 +48,7 @@ class SyncStudentCommandHandler:
             VectorRepositoryException: If database indexing fails.
         """
         student_id = command.student.id
-        logger.info(f"Starting synchronization pipeline for student ID: {student_id}")
+        logger.info(f"Starting synchronization pipeline for student ID: {student_id} ({command.student.full_name})")
 
         # 1. Materialize raw structural attributes into clean text prose paragraphs
         prose_document = format_student_document(

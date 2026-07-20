@@ -49,7 +49,9 @@ class GetProfessorSuggestionsQueryHandler:
             EmbeddingServiceException: If query vector generation fails.
             VectorRepositoryException: If the underlying vector DB lookup fails.
         """
-        logger.info("Executing professor advisor matchmaking query via stateless read-path.")
+        logger.info(
+            f"Executing professor advisor matchmaking query for title='{query.title}' (limit={query.limit})"
+        )
 
         # 1. Format the flat details into a targeted advisor semantic search query string
         query_prose = format_professor_advisor_query(

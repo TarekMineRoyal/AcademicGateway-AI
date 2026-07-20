@@ -70,13 +70,19 @@ class BulkSyncProfessorCommandHandler:
             return
 
         chunk_size = settings.BATCH_CHUNK_SIZE
+        total_chunks = (total_items + chunk_size - 1) // chunk_size
         logger.info(
-            f"Starting bulk synchronization for {total_items} professors (Chunk size: {chunk_size})"
+            f"Starting bulk synchronization for {total_items} professors across {total_chunks} chunk(s) (Chunk size: {chunk_size})"
         )
 
         # 1. Process items in VRAM-safe chunks to protect GPU memory
         for i in range(0, total_items, chunk_size):
             chunk = command.items[i : i + chunk_size]
+            chunk_num = (i // chunk_size) + 1
+            logger.info(
+                f"Processing chunk {chunk_num}/{total_chunks} ({len(chunk)} records) for bulk professor sync."
+            )
+
             chunk_professors = [item.professor for item in chunk]
 
             # Map the pure formatter over the chunk
@@ -90,23 +96,23 @@ class BulkSyncProfessorCommandHandler:
             # Compute batch embeddings using PyTorch parallelization
             try:
                 logger.debug(
-                    f"Generating batch embeddings for chunk starting at index {i} ({len(chunk)} records)"
+                    f"Generating batch embeddings for chunk {chunk_num}/{total_chunks} ({len(chunk)} records)"
                 )
                 vectors = self._embedding_service.embed_documents_batch(prose_documents)
             except Exception as ex:
-                error_msg = f"Failed to generate batch embeddings for professor chunk starting at index {i}."
+                error_msg = f"Failed to generate batch embeddings for professor chunk {chunk_num}/{total_chunks}."
                 logger.error(f"{error_msg} Details: {str(ex)}")
                 raise EmbeddingServiceException(error_msg) from ex
 
             # Upsert batch into staging table
             try:
                 logger.debug(
-                    f"Upserting professor chunk into staging table '{self._staging_table_name}'"
+                    f"Upserting professor chunk {chunk_num}/{total_chunks} into staging table '{self._staging_table_name}'"
                 )
                 self._staging_repository.bulk_upsert(chunk_professors, vectors)
             except Exception as ex:
                 error_msg = (
-                    "Failed to bulk upsert professor chunk into staging storage."
+                    f"Failed to bulk upsert professor chunk {chunk_num}/{total_chunks} into staging storage."
                 )
                 logger.error(f"{error_msg} Details: {str(ex)}")
                 raise VectorRepositoryException(error_msg) from ex

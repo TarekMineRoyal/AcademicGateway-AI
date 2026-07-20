@@ -2,6 +2,7 @@ import logging
 import uuid
 from pydantic import BaseModel, Field
 
+from application.exceptions.application_exceptions import VectorRepositoryException
 from application.interfaces.vector_repositories import ISkillVectorRepository
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,13 @@ class DeleteSkillHandler:
         self._skill_repository = skill_repository
 
     def handle(self, command: DeleteSkillCommand) -> None:
-        logger.info(f"Executing deletion for skill vector node: {command.id}")
-        self._skill_repository.delete(command.id)
-        logger.info(f"Successfully processed deletion for skill vector node: {command.id}")
+        skill_id = command.id
+        logger.info(f"Executing deletion for skill vector node ID: {skill_id}")
+
+        try:
+            self._skill_repository.delete(skill_id)
+            logger.info(f"Successfully processed deletion for skill vector node ID: {skill_id}")
+        except Exception as ex:
+            error_msg = f"Failed to delete skill vector record for ID {skill_id}."
+            logger.error(f"{error_msg} Details: {str(ex)}")
+            raise VectorRepositoryException(error_msg) from ex

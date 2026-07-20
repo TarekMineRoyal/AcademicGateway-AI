@@ -48,7 +48,10 @@ class GetSkillRecommendationsQueryHandler:
             EmbeddingServiceException: If query vector generation fails.
             VectorRepositoryException: If the underlying vector DB execution fails.
         """
-        logger.info("Executing skill recommendation discovery via stateless read-path.")
+        logger.info(
+            f"Executing skill recommendation discovery query for major='{query.major_name}' "
+            f"(limit={query.limit}, skills_count={len(query.skill_names)})"
+        )
 
         # 1. Map existing contextual coordinates into a target progression query prose string
         query_prose = format_skill_recommendation_query(

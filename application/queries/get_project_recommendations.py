@@ -51,7 +51,10 @@ class GetProjectRecommendationsQueryHandler:
             EmbeddingServiceException: If query vector generation fails.
             VectorRepositoryException: If the underlying vector DB execution fails.
         """
-        logger.info("Executing project recommendation query via stateless read-path.")
+        logger.info(
+            f"Executing project recommendation query for major='{query.major_name}' "
+            f"(limit={query.limit}, restrict_to_major_id={query.restrict_to_major_id})"
+        )
 
         # 1. Translate the current context parameters into targeted query search prose
         query_prose = format_project_recommendation_query(

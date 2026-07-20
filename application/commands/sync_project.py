@@ -50,7 +50,9 @@ class SyncProjectCommandHandler:
             VectorRepositoryException: If the LanceDB persistence layer fails.
         """
         template_id = command.template.id
-        logger.info(f"Starting synchronization pipeline for project template ID: {template_id}")
+        logger.info(
+            f"Starting synchronization pipeline for project template ID: {template_id} ({command.template.title})"
+        )
 
         # 1. Transform the structural project data into a clean narrative block
         prose_document = format_project_document(
