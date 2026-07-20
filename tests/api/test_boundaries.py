@@ -1,9 +1,15 @@
-import pytest
 from unittest.mock import MagicMock, patch
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
 # Component Imports
+from api.dependencies import (
+    get_bulk_sync_professor_handler,
+    get_bulk_sync_project_handler,
+    get_bulk_sync_skill_handler,
+    get_bulk_sync_student_handler,
+)
 from api.main import app
 from application.exceptions.application_exceptions import (
     EmbeddingServiceException,
@@ -17,7 +23,7 @@ pytestmark = pytest.mark.api
 # ============================================================================
 # DUMMY TEST ROUTES FOR EXCEPTION TESTING
 # ============================================================================
-# We temporarily append diagnostic endpoints onto the active app instance 
+# We temporarily append diagnostic endpoints onto the active app instance
 # to isolate and validate global middleware handlers without testing pass-through shells.
 @app.get("/_test/raise-embedding-exception")
 async def route_raise_embedding():
@@ -36,8 +42,9 @@ def api_client():
 
 
 # ============================================================================
-# 5. API ERROR BOUNDARIES & HEALTH MONITORING TESTS (Checkpoint 5)
+# 5. API ERROR BOUNDARIES & HEALTH MONITORING TESTS
 # ============================================================================
+
 
 def test_health_endpoint_returns_healthy_when_database_connected(api_client):
     """Hit /health and verify database table check logic reports true status configurations."""
@@ -45,16 +52,15 @@ def test_health_endpoint_returns_healthy_when_database_connected(api_client):
     mock_connection = MagicMock()
     mock_connection.table_names.return_value = ["professors", "students", "skills"]
 
-    with patch.object(lancedb_client, "get_connection", return_value=mock_connection) as mock_get_conn:
+    with patch.object(
+        lancedb_client, "get_connection", return_value=mock_connection
+    ) as mock_get_conn:
         # Act
         response = api_client.get("/health")
 
         # Assert
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == {
-            "status": "healthy",
-            "database": "connected"
-        }
+        assert response.json() == {"status": "healthy", "database": "connected"}
         mock_get_conn.assert_called_once()
         mock_connection.table_names.assert_called_once()
 
@@ -62,7 +68,11 @@ def test_health_endpoint_returns_healthy_when_database_connected(api_client):
 def test_health_endpoint_handles_connection_drops_safely(api_client):
     """Hit /health and verify database drops convert gracefully into service status errors."""
     # Arrange
-    with patch.object(lancedb_client, "get_connection", side_effect=Exception("Disk I/O Timeout Failure")):
+    with patch.object(
+        lancedb_client,
+        "get_connection",
+        side_effect=Exception("Disk I/O Timeout Failure"),
+    ):
         # Act
         response = api_client.get("/health")
 
@@ -70,7 +80,7 @@ def test_health_endpoint_handles_connection_drops_safely(api_client):
         assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
         assert response.json() == {
             "status": "unhealthy",
-            "reason": "Disk I/O Timeout Failure"
+            "reason": "Disk I/O Timeout Failure",
         }
 
 
@@ -85,7 +95,10 @@ def test_global_exception_handler_maps_embedding_failure_to_503(api_client):
     # Deep payload verification to ensure exact contracts required by the C# application
     json_data = response.json()
     assert "detail" in json_data
-    assert json_data["detail"] == "Embedding generation failed. Check local GPU/model status."
+    assert (
+        json_data["detail"]
+        == "Embedding generation failed. Check local GPU/model status."
+    )
 
 
 def test_global_exception_handler_maps_repository_failure_to_500(api_client):
@@ -100,3 +113,35 @@ def test_global_exception_handler_maps_repository_failure_to_500(api_client):
     json_data = response.json()
     assert "detail" in json_data
     assert json_data["detail"] == "Vector database execution failed. Transaction aborted."
+
+
+# ============================================================================
+# BULK SYNCHRONIZATION API BOUNDARY TESTS
+# ============================================================================
+
+
+@pytest.mark.parametrize(
+    "endpoint, dependency_func",
+    [
+        ("/bulk/student", get_bulk_sync_student_handler),
+        ("/bulk/project", get_bulk_sync_project_handler),
+        ("/bulk/professor", get_bulk_sync_professor_handler),
+        ("/bulk/skill", get_bulk_sync_skill_handler),
+    ],
+)
+def test_bulk_sync_endpoints_return_202_accepted(
+    api_client, endpoint, dependency_func
+):
+    """Verify that all /bulk/* endpoints accept payloads and immediately respond with 202 Accepted."""
+    mock_handler = MagicMock()
+    app.dependency_overrides[dependency_func] = lambda: mock_handler
+
+    try:
+        response = api_client.post(endpoint, json={"items": []})
+
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        json_data = response.json()
+        assert json_data["status"] == "accepted"
+        assert "message" in json_data
+    finally:
+        app.dependency_overrides.clear()
