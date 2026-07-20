@@ -23,8 +23,6 @@ pytestmark = pytest.mark.api
 # ============================================================================
 # DUMMY TEST ROUTES FOR EXCEPTION TESTING
 # ============================================================================
-# We temporarily append diagnostic endpoints onto the active app instance
-# to isolate and validate global middleware handlers without testing pass-through shells.
 @app.get("/_test/raise-embedding-exception")
 async def route_raise_embedding():
     raise EmbeddingServiceException("CUDA out of VRAM pressure on RTX 3050.")
@@ -48,17 +46,14 @@ def api_client():
 
 def test_health_endpoint_returns_healthy_when_database_connected(api_client):
     """Hit /health and verify database table check logic reports true status configurations."""
-    # Arrange
     mock_connection = MagicMock()
     mock_connection.table_names.return_value = ["professors", "students", "skills"]
 
     with patch.object(
         lancedb_client, "get_connection", return_value=mock_connection
     ) as mock_get_conn:
-        # Act
         response = api_client.get("/health")
 
-        # Assert
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {"status": "healthy", "database": "connected"}
         mock_get_conn.assert_called_once()
@@ -67,16 +62,13 @@ def test_health_endpoint_returns_healthy_when_database_connected(api_client):
 
 def test_health_endpoint_handles_connection_drops_safely(api_client):
     """Hit /health and verify database drops convert gracefully into service status errors."""
-    # Arrange
     with patch.object(
         lancedb_client,
         "get_connection",
         side_effect=Exception("Disk I/O Timeout Failure"),
     ):
-        # Act
         response = api_client.get("/health")
 
-        # Assert
         assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
         assert response.json() == {
             "status": "unhealthy",
@@ -86,13 +78,10 @@ def test_health_endpoint_handles_connection_drops_safely(api_client):
 
 def test_global_exception_handler_maps_embedding_failure_to_503(api_client):
     """Force an embedding mockup failure and verify the system outputs HTTP 503 contracts."""
-    # Act
     response = api_client.get("/_test/raise-embedding-exception")
 
-    # Assert
     assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
 
-    # Deep payload verification to ensure exact contracts required by the C# application
     json_data = response.json()
     assert "detail" in json_data
     assert (
@@ -103,13 +92,10 @@ def test_global_exception_handler_maps_embedding_failure_to_503(api_client):
 
 def test_global_exception_handler_maps_repository_failure_to_500(api_client):
     """Force a database execution failure and verify the system outputs HTTP 500 contracts."""
-    # Act
     response = api_client.get("/_test/raise-repository-exception")
 
-    # Assert
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    # Verify exact JSON formatting context match
     json_data = response.json()
     assert "detail" in json_data
     assert json_data["detail"] == "Vector database execution failed. Transaction aborted."
@@ -123,16 +109,16 @@ def test_global_exception_handler_maps_repository_failure_to_500(api_client):
 @pytest.mark.parametrize(
     "endpoint, dependency_func",
     [
-        ("/bulk/student", get_bulk_sync_student_handler),
-        ("/bulk/project", get_bulk_sync_project_handler),
-        ("/bulk/professor", get_bulk_sync_professor_handler),
-        ("/bulk/skill", get_bulk_sync_skill_handler),
+        ("/api/v1/sync/bulk/student", get_bulk_sync_student_handler),
+        ("/api/v1/sync/bulk/project", get_bulk_sync_project_handler),
+        ("/api/v1/sync/bulk/professor", get_bulk_sync_professor_handler),
+        ("/api/v1/sync/bulk/skill", get_bulk_sync_skill_handler),
     ],
 )
 def test_bulk_sync_endpoints_return_202_accepted(
     api_client, endpoint, dependency_func
 ):
-    """Verify that all /bulk/* endpoints accept payloads and immediately respond with 202 Accepted."""
+    """Verify that all /api/v1/sync/bulk/* endpoints accept payloads and immediately respond with 202 Accepted."""
     mock_handler = MagicMock()
     app.dependency_overrides[dependency_func] = lambda: mock_handler
 

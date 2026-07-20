@@ -34,7 +34,7 @@ class LanceDbClient:
     def swap_tables(self, source_table_name: str, target_table_name: str) -> None:
         """
         Promotes a staging/sync table to the active production table.
-        Drops the target production table if it exists and renames the source table to target.
+        Overwrites target production table using source Arrow dataset, then drops source table.
 
         Args:
             source_table_name (str): Name of the temporary staging table (e.g., 'professors_sync').
@@ -42,10 +42,12 @@ class LanceDbClient:
         """
         conn = self.get_connection()
         with self._lock:
-            existing_tables = conn.table_names()
-            if target_table_name in existing_tables:
-                conn.drop_table(target_table_name)
-            conn.rename_table(source_table_name, target_table_name)
+            tables = conn.list_tables().tables
+            if source_table_name in tables:
+                source_table = conn.open_table(source_table_name)
+                arrow_data = source_table.to_arrow()
+                conn.create_table(target_table_name, data=arrow_data, mode="overwrite")
+                conn.drop_table(source_table_name)
 
 
 # Instantiate a centralized client instance to manage connection sharing
