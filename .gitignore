@@ -27,3 +27,6 @@ data_storage/
 # Operating System Files
 .DS_Store
 Thumbs.db
+
+# Local LanceDB Vector Database
+data/
