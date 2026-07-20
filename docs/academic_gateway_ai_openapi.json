@@ -1,0 +1,1250 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Vector Matchmaking Engine",
+    "description": "High-performance LanceDB semantic vector indexing microservice.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/sync/student": {
+      "post": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Synchronizes or mutates a student profile vector space node.",
+        "description": "Accepts an enriched student payload. Handles initial database synchronization,\nnew registration entries, and profile edits interchangeably.",
+        "operationId": "sync_student_api_v1_sync_student_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncStudentCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/project": {
+      "post": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Synchronizes or mutates a project blueprint vector space node.",
+        "description": "Accepts an enriched project blueprint payload. Handles real-time creation\nand structural approval updates interchangeably.",
+        "operationId": "sync_project_api_v1_sync_project_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncProjectCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/professor": {
+      "post": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Synchronizes or mutates a professor faculty vector space node.",
+        "description": "Accepts an enriched professor details payload. Handles direct lab/profile\nmodifications.",
+        "operationId": "sync_professor_api_v1_sync_professor_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncProfessorCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/skill": {
+      "post": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Synchronizes or mutates a global competency vector space node.",
+        "description": "Accepts a raw technical skill capability payload. Handles system-wide catalog\npopulation and real-time capability adjustments interchangeably.",
+        "operationId": "sync_skill_api_v1_sync_skill_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncSkillCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/bulk/student": {
+      "post": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Asynchronously queues bulk student profile synchronization pipeline.",
+        "description": "Accepts a batch collection of student profile payloads. Offloads VRAM-safe chunk processing\nand Blue/Green table swapping to a background task, returning 202 Accepted immediately.",
+        "operationId": "bulk_sync_student_api_v1_sync_bulk_student_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkSyncStudentCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/bulk/project": {
+      "post": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Asynchronously queues bulk project template synchronization pipeline.",
+        "description": "Accepts a batch collection of project template payloads. Offloads VRAM-safe chunk processing\nand Blue/Green table swapping to a background task, returning 202 Accepted immediately.",
+        "operationId": "bulk_sync_project_api_v1_sync_bulk_project_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkSyncProjectCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/bulk/professor": {
+      "post": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Asynchronously queues bulk professor faculty synchronization pipeline.",
+        "description": "Accepts a batch collection of professor faculty payloads. Offloads VRAM-safe chunk processing\nand Blue/Green table swapping to a background task, returning 202 Accepted immediately.",
+        "operationId": "bulk_sync_professor_api_v1_sync_bulk_professor_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkSyncProfessorCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/bulk/skill": {
+      "post": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Asynchronously queues bulk skill catalog synchronization pipeline.",
+        "description": "Accepts a batch collection of skill catalog payloads. Offloads VRAM-safe chunk processing\nand Blue/Green table swapping to a background task, returning 202 Accepted immediately.",
+        "operationId": "bulk_sync_skill_api_v1_sync_bulk_skill_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkSyncSkillCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/student/{student_id}": {
+      "delete": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Purges a student profile vector space node.",
+        "description": "Removes a student profile from the LanceDB vector store by its primary UUID.\nExecution is idempotent: non-existent IDs resolve safely with HTTP 200 OK.",
+        "operationId": "delete_student_api_v1_sync_student__student_id__delete",
+        "parameters": [
+          {
+            "name": "student_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Student Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/project/{project_id}": {
+      "delete": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Purges a project blueprint vector space node.",
+        "description": "Removes a project template blueprint from the LanceDB vector store by its primary UUID.\nExecution is idempotent: non-existent IDs resolve safely with HTTP 200 OK.",
+        "operationId": "delete_project_api_v1_sync_project__project_id__delete",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/professor/{professor_id}": {
+      "delete": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Purges a professor faculty vector space node.",
+        "description": "Removes a professor faculty profile from the LanceDB vector store by its primary UUID.\nExecution is idempotent: non-existent IDs resolve safely with HTTP 200 OK.",
+        "operationId": "delete_professor_api_v1_sync_professor__professor_id__delete",
+        "parameters": [
+          {
+            "name": "professor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Professor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/skill/{skill_id}": {
+      "delete": {
+        "tags": [
+          "Synchronization"
+        ],
+        "summary": "Purges a global competency vector space node.",
+        "description": "Removes a technical skill capability from the LanceDB vector store by its primary UUID.\nExecution is idempotent: non-existent IDs resolve safely with HTTP 200 OK.",
+        "operationId": "delete_skill_api_v1_sync_skill__skill_id__delete",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Skill Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search/projects": {
+      "post": {
+        "tags": [
+          "Semantic Search"
+        ],
+        "summary": "Fetch semantic project recommendations for a student.",
+        "description": "Accepts a student's profile context details and executes a semantic nearest-neighbor vector scan\nto fetch highly matching project blueprints[cite: 7].",
+        "operationId": "get_project_recommendations_api_v1_search_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetProjectRecommendationsQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "type": "array",
+                  "title": "Response Get Project Recommendations Api V1 Search Projects Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search/professors": {
+      "post": {
+        "tags": [
+          "Semantic Search"
+        ],
+        "summary": "Discover closest matching faculty advisors for a project template.",
+        "description": "Translates a project template's requirements into an advisor-targeted semantic lookup,\npre-filtering exclusively for active faculty members[cite: 6].",
+        "operationId": "get_professor_suggestions_api_v1_search_professors_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetProfessorSuggestionsQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "type": "array",
+                  "title": "Response Get Professor Suggestions Api V1 Search Professors Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search/skills": {
+      "post": {
+        "tags": [
+          "Semantic Search"
+        ],
+        "summary": "Identify adjacent technical skills for student profile progression.",
+        "description": "Analyzes a student's current capability matrix and major track to isolate missing or\nhighly relevant next-step technical skill nodes across the global catalog[cite: 8].",
+        "operationId": "get_skill_recommendations_api_v1_search_skills_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetSkillRecommendationsQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "type": "array",
+                  "title": "Response Get Skill Recommendations Api V1 Search Skills Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Infrastructure"
+        ],
+        "summary": "Health Check",
+        "description": "Verifies the operational status of the localized LanceDB engine connection.\nUsed by C# orchestrators or container checkers for lifecycle management.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BulkSyncProfessorCommand": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SyncProfessorCommand"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Collection of professor sync payloads to be processed in bulk."
+          }
+        },
+        "type": "object",
+        "title": "BulkSyncProfessorCommand",
+        "description": "Bulk payload DTO containing a batch of professor records for backfill/synchronization."
+      },
+      "BulkSyncProjectCommand": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SyncProjectCommand"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Collection of project template sync payloads to be processed in bulk."
+          }
+        },
+        "type": "object",
+        "title": "BulkSyncProjectCommand",
+        "description": "Bulk payload DTO containing a batch of project template records for backfill/synchronization."
+      },
+      "BulkSyncSkillCommand": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SyncSkillCommand"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Collection of skill sync payloads to be processed in bulk."
+          }
+        },
+        "type": "object",
+        "title": "BulkSyncSkillCommand",
+        "description": "Bulk payload DTO containing a batch of skill records for backfill/synchronization."
+      },
+      "BulkSyncStudentCommand": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SyncStudentCommand"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Collection of student sync payloads to be processed in bulk."
+          }
+        },
+        "type": "object",
+        "title": "BulkSyncStudentCommand",
+        "description": "Bulk payload DTO containing a batch of student profile records for backfill/synchronization."
+      },
+      "GetProfessorSuggestionsQuery": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "The title of the project template."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The core scope and description of the project."
+          },
+          "major_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Name",
+            "description": "Descriptive name of the aligned major."
+          },
+          "specialty_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialty Name",
+            "description": "Descriptive name of the sub-track concentration."
+          },
+          "skill_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skill Names",
+            "description": "Labels of required student skills."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 10
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "description"
+        ],
+        "title": "GetProfessorSuggestionsQuery",
+        "description": "Query parameters for finding matching faculty advisors for a project.\nFollows the Stateless Searcher pattern by receiving flat textual context directly."
+      },
+      "GetProjectRecommendationsQuery": {
+        "properties": {
+          "major_name": {
+            "type": "string",
+            "title": "Major Name"
+          },
+          "specialty_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Specialty Names"
+          },
+          "skill_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skill Names"
+          },
+          "about_me": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About Me"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 10
+          },
+          "restrict_to_major_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restrict To Major Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "major_name"
+        ],
+        "title": "GetProjectRecommendationsQuery",
+        "description": "Query parameters for fetching semantic project recommendations for a student.\nFollows the Stateless Searcher pattern by receiving the textual context directly."
+      },
+      "GetSkillRecommendationsQuery": {
+        "properties": {
+          "major_name": {
+            "type": "string",
+            "title": "Major Name"
+          },
+          "specialty_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Specialty Names"
+          },
+          "skill_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skill Names"
+          },
+          "about_me": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About Me"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 10
+          }
+        },
+        "type": "object",
+        "required": [
+          "major_name"
+        ],
+        "title": "GetSkillRecommendationsQuery",
+        "description": "Query parameters for discovering adjacent or relevant skills for a student.\nUses the Stateless Searcher pattern to accept contextual properties directly."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Professor": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "department": {
+            "type": "string",
+            "title": "Department"
+          },
+          "rank": {
+            "type": "string",
+            "title": "Rank"
+          },
+          "is_accepting_projects": {
+            "type": "boolean",
+            "title": "Is Accepting Projects"
+          },
+          "research_interest_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Research Interest Ids"
+          },
+          "about_me": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About Me",
+            "description": "Faculty bio, current lab focus, or summary text."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name",
+          "department",
+          "rank",
+          "is_accepting_projects"
+        ],
+        "title": "Professor",
+        "description": "Lean read-model schema representing a Professor profile within the AI vector space.\nOptimized for contextual matching against incoming student project applications."
+      },
+      "ProjectTemplate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "provider_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Provider Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "skill_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Skill Ids"
+          },
+          "major_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Id",
+            "description": "Structural filter target major alignment."
+          },
+          "specialty_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialty Id",
+            "description": "Structural filter target specialty alignment."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "provider_id",
+          "created_at"
+        ],
+        "title": "ProjectTemplate",
+        "description": "Lean read-model schema representing a Project Template blueprint.\nStrips away workflow state-machines, DAG validation loops, and factory logic\nto serve as a pure vectorized node for matchmaking."
+      },
+      "Skill": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Skill"
+      },
+      "Student": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "major_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Major Id"
+          },
+          "specialty_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Specialty Ids"
+          },
+          "skill_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Skill Ids"
+          },
+          "about_me": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About Me",
+            "description": "Aspirational summary or biography text."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name",
+          "major_id"
+        ],
+        "title": "Student",
+        "description": "Lean read-model representing a Student profile within the AI vector space.\nFlattens relational join tables into clean identity arrays for high-speed indexing."
+      },
+      "SyncProfessorCommand": {
+        "properties": {
+          "professor": {
+            "$ref": "#/components/schemas/Professor"
+          },
+          "interest_areas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Interest Areas",
+            "description": "Text labels of the professor's active research interests."
+          }
+        },
+        "type": "object",
+        "required": [
+          "professor"
+        ],
+        "title": "SyncProfessorCommand",
+        "description": "The incoming fat payload DTO from the C# core backend synchronization event.\nFlattens the research interest aggregate strings directly at the boundary source\nto maintain high-performance ingestion."
+      },
+      "SyncProjectCommand": {
+        "properties": {
+          "template": {
+            "$ref": "#/components/schemas/ProjectTemplate"
+          },
+          "major_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Name",
+            "description": "The descriptive name of the aligned major."
+          },
+          "specialty_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialty Name",
+            "description": "The descriptive name of the concentration track."
+          },
+          "skill_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skill Names",
+            "description": "Text labels of required competencies."
+          }
+        },
+        "type": "object",
+        "required": [
+          "template"
+        ],
+        "title": "SyncProjectCommand",
+        "description": "The incoming fat payload DTO from the C# core backend synchronization event.\nEnriches relational keys with descriptive text labels at the source boundary\nto keep the vector engine decoupled from transactional databases."
+      },
+      "SyncSkillCommand": {
+        "properties": {
+          "skill": {
+            "$ref": "#/components/schemas/Skill"
+          }
+        },
+        "type": "object",
+        "required": [
+          "skill"
+        ],
+        "title": "SyncSkillCommand",
+        "description": "Data Transfer Object representing the payload sent by the C# backend\nwhenever a global competency skill is created or modified.\nUses a 'fat' DTO pattern to directly accept the materialized domain read-model."
+      },
+      "SyncStudentCommand": {
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/Student"
+          },
+          "major_name": {
+            "type": "string",
+            "title": "Major Name"
+          },
+          "specialty_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Specialty Names"
+          },
+          "skill_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Skill Names"
+          }
+        },
+        "type": "object",
+        "required": [
+          "student",
+          "major_name"
+        ],
+        "title": "SyncStudentCommand",
+        "description": "The incoming fat payload DTO from the C# core backend synchronization event.\nEnriches relational keys with descriptive text names at the boundary source."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
