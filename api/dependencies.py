@@ -6,27 +6,46 @@ from application.interfaces.vector_repositories import (
     IProfessorVectorRepository,
     IProjectTemplateVectorRepository,
     ISkillVectorRepository,
-    IStudentVectorRepository
+    IStudentVectorRepository,
 )
 
-# ---- Application CQRS Command Handlers (Write-Path) ----
+# ---- Application CQRS Single-Sync Command Handlers ----
 from application.commands.sync_professor import SyncProfessorCommandHandler
 from application.commands.sync_project import SyncProjectCommandHandler
 from application.commands.sync_skill import SyncSkillHandler
 from application.commands.sync_student import SyncStudentCommandHandler
 
+# ---- Application CQRS Bulk-Sync Command Handlers ----
+from application.commands.bulk_sync_professor import BulkSyncProfessorCommandHandler
+from application.commands.bulk_sync_project import BulkSyncProjectCommandHandler
+from application.commands.bulk_sync_skill import BulkSyncSkillCommandHandler
+from application.commands.bulk_sync_student import BulkSyncStudentCommandHandler
+
 # ---- Application CQRS Query Handlers (Read-Path) ----
-from application.queries.get_professor_suggestions import GetProfessorSuggestionsQueryHandler
-from application.queries.get_project_recommendations import GetProjectRecommendationsQueryHandler
-from application.queries.get_skill_recommendations import GetSkillRecommendationsQueryHandler
+from application.queries.get_professor_suggestions import (
+    GetProfessorSuggestionsQueryHandler,
+)
+from application.queries.get_project_recommendations import (
+    GetProjectRecommendationsQueryHandler,
+)
+from application.queries.get_skill_recommendations import (
+    GetSkillRecommendationsQueryHandler,
+)
 
 # ---- Infrastructure Implementations ----
 from infrastructure.embedding.nomic_service import NomicEmbeddingService
-from infrastructure.persistence.repositories.student_repository import StudentVectorRepository
-from infrastructure.persistence.repositories.project_repository import ProjectTemplateVectorRepository
-from infrastructure.persistence.repositories.professor_repository import ProfessorVectorRepository
-from infrastructure.persistence.repositories.skill_repository import SkillVectorRepository
-
+from infrastructure.persistence.repositories.professor_repository import (
+    ProfessorVectorRepository,
+)
+from infrastructure.persistence.repositories.project_repository import (
+    ProjectTemplateVectorRepository,
+)
+from infrastructure.persistence.repositories.skill_repository import (
+    SkillVectorRepository,
+)
+from infrastructure.persistence.repositories.student_repository import (
+    StudentVectorRepository,
+)
 
 # ==============================================================================
 # GLOBAL SINGLETONS (Preserves Hot In-Memory Table Handle Caches)
@@ -67,34 +86,79 @@ def get_skill_repository() -> ISkillVectorRepository:
 
 
 # ==============================================================================
-# CQRS COMMAND HANDLER PROVIDERS (Write-Path Mutations)
+# CQRS SINGLE-SYNC COMMAND HANDLER PROVIDERS (Write-Path Mutations)
 # ==============================================================================
 def get_sync_professor_handler(
     embedder: IEmbeddingService = Depends(get_embedding_service),
-    repository: IProfessorVectorRepository = Depends(get_professor_repository)
+    repository: IProfessorVectorRepository = Depends(get_professor_repository),
 ) -> SyncProfessorCommandHandler:
-    return SyncProfessorCommandHandler(embedding_service=embedder, professor_repository=repository)
+    return SyncProfessorCommandHandler(
+        embedding_service=embedder, professor_repository=repository
+    )
 
 
 def get_sync_project_handler(
     embedder: IEmbeddingService = Depends(get_embedding_service),
-    repository: IProjectTemplateVectorRepository = Depends(get_project_repository)
+    repository: IProjectTemplateVectorRepository = Depends(get_project_repository),
 ) -> SyncProjectCommandHandler:
-    return SyncProjectCommandHandler(embedding_service=embedder, project_repository=repository)
+    return SyncProjectCommandHandler(
+        embedding_service=embedder, project_repository=repository
+    )
 
 
 def get_sync_skill_handler(
     embedder: IEmbeddingService = Depends(get_embedding_service),
-    repository: ISkillVectorRepository = Depends(get_skill_repository)
+    repository: ISkillVectorRepository = Depends(get_skill_repository),
 ) -> SyncSkillHandler:
     return SyncSkillHandler(embedding_service=embedder, skill_repository=repository)
 
 
 def get_sync_student_handler(
     embedder: IEmbeddingService = Depends(get_embedding_service),
-    repository: IStudentVectorRepository = Depends(get_student_repository)
+    repository: IStudentVectorRepository = Depends(get_student_repository),
 ) -> SyncStudentCommandHandler:
-    return SyncStudentCommandHandler(embedding_service=embedder, student_repository=repository)
+    return SyncStudentCommandHandler(
+        embedding_service=embedder, student_repository=repository
+    )
+
+
+# ==============================================================================
+# CQRS BULK-SYNC COMMAND HANDLER PROVIDERS (Backfill / Bulk Ingestion)
+# ==============================================================================
+def get_bulk_sync_professor_handler(
+    embedder: IEmbeddingService = Depends(get_embedding_service),
+    repository: IProfessorVectorRepository = Depends(get_professor_repository),
+) -> BulkSyncProfessorCommandHandler:
+    return BulkSyncProfessorCommandHandler(
+        embedding_service=embedder, professor_repository=repository
+    )
+
+
+def get_bulk_sync_project_handler(
+    embedder: IEmbeddingService = Depends(get_embedding_service),
+    repository: IProjectTemplateVectorRepository = Depends(get_project_repository),
+) -> BulkSyncProjectCommandHandler:
+    return BulkSyncProjectCommandHandler(
+        embedding_service=embedder, project_repository=repository
+    )
+
+
+def get_bulk_sync_skill_handler(
+    embedder: IEmbeddingService = Depends(get_embedding_service),
+    repository: ISkillVectorRepository = Depends(get_skill_repository),
+) -> BulkSyncSkillCommandHandler:
+    return BulkSyncSkillCommandHandler(
+        embedding_service=embedder, skill_repository=repository
+    )
+
+
+def get_bulk_sync_student_handler(
+    embedder: IEmbeddingService = Depends(get_embedding_service),
+    repository: IStudentVectorRepository = Depends(get_student_repository),
+) -> BulkSyncStudentCommandHandler:
+    return BulkSyncStudentCommandHandler(
+        embedding_service=embedder, student_repository=repository
+    )
 
 
 # ==============================================================================
@@ -102,20 +166,26 @@ def get_sync_student_handler(
 # ==============================================================================
 def get_professor_suggestions_handler(
     embedder: IEmbeddingService = Depends(get_embedding_service),
-    repository: IProfessorVectorRepository = Depends(get_professor_repository)
+    repository: IProfessorVectorRepository = Depends(get_professor_repository),
 ) -> GetProfessorSuggestionsQueryHandler:
-    return GetProfessorSuggestionsQueryHandler(embedding_service=embedder, professor_repository=repository)
+    return GetProfessorSuggestionsQueryHandler(
+        embedding_service=embedder, professor_repository=repository
+    )
 
 
 def get_project_recommendations_handler(
     embedder: IEmbeddingService = Depends(get_embedding_service),
-    repository: IProjectTemplateVectorRepository = Depends(get_project_repository)
+    repository: IProjectTemplateVectorRepository = Depends(get_project_repository),
 ) -> GetProjectRecommendationsQueryHandler:
-    return GetProjectRecommendationsQueryHandler(embedding_service=embedder, project_repository=repository)
+    return GetProjectRecommendationsQueryHandler(
+        embedding_service=embedder, project_repository=repository
+    )
 
 
 def get_skill_recommendations_handler(
     embedder: IEmbeddingService = Depends(get_embedding_service),
-    repository: ISkillVectorRepository = Depends(get_skill_repository)
+    repository: ISkillVectorRepository = Depends(get_skill_repository),
 ) -> GetSkillRecommendationsQueryHandler:
-    return GetSkillRecommendationsQueryHandler(embedding_service=embedder, skill_repository=repository)
+    return GetSkillRecommendationsQueryHandler(
+        embedding_service=embedder, skill_repository=repository
+    )
