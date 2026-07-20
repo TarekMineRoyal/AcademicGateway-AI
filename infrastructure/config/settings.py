@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     # Core Application Configuration
     ENVIRONMENT: Literal["development", "testing", "production"] = "development"
 
+    # Logging Configuration
+    LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: Literal["console", "json"] = "console"
+
     # Nomic AI Platform / Local Model Settings
     NOMIC_API_KEY: Optional[str] = None
     NOMIC_MODEL_NAME: str = "nomic-ai/nomic-embed-text-v1.5"

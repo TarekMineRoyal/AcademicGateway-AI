@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
@@ -6,21 +7,33 @@ from application.exceptions.application_exceptions import (
     EmbeddingServiceException,
     VectorRepositoryException,
 )
+from infrastructure.config.settings import settings
+from infrastructure.logging.config import setup_logging
 from infrastructure.persistence.lancedb_client import lancedb_client
+from api.middleware.logging_middleware import LoggingMiddleware
 from api.routers import sync_router, search_router
 
-# Configure infrastructure logging layout
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+# Initialize application-wide logging layout via settings
+setup_logging(log_level=settings.LOG_LEVEL, log_format=settings.LOG_FORMAT)
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting up Vector Matchmaking Engine microservice...")
+    yield
+    logger.info("Shutting down Vector Matchmaking Engine microservice...")
+
 
 app = FastAPI(
     title="Vector Matchmaking Engine",
     description="High-performance LanceDB semantic vector indexing microservice.",
     version="1.0.0",
+    lifespan=lifespan,
 )
+
+# Register request/response logging middleware
+app.add_middleware(LoggingMiddleware)
 
 
 # ==============================================================================
@@ -75,4 +88,4 @@ def health_check():
             content={"status": "unhealthy", "reason": str(ex)},
         )
 
-    # start using uvicorn api.main:app --reload --port 8000
+# start using uvicorn api.main:app --reload --port 8000
