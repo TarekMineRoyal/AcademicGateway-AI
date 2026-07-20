@@ -2,7 +2,7 @@
 
 > High-performance, localized vector matchmaking and semantic search microservice powering the [AcademicGateway](https://github.com/TarekMineRoyal/AcademicGateway) recommendation engine.
 
-`AcademicGateway-AI` is built with **FastAPI**, **LanceDB**, and local **Nomic-Embed-Text** embeddings accelerated via **PyTorch**. It provides real-time vector synchronization, zero-downtime Blue/Green bulk ingestion, data destruction, and multi-entity semantic matchmaking for students, professors, project blueprints, and technical skills.
+`AcademicGateway-AI` is built with **FastAPI**, **LanceDB**, and local **Nomic-Embed-Text** embeddings accelerated via **PyTorch**. It provides real-time vector synchronization, zero-downtime Blue/Green bulk ingestion, data destruction, multi-entity semantic matchmaking, and production-grade observability for students, professors, project blueprints, and technical skills.
 
 ---
 
@@ -21,6 +21,10 @@ The microservice is built around clean architectural patterns to guarantee high 
   * Ingestion processes asynchronously in background tasks, slicing incoming arrays into VRAM-safe batches defined by `BATCH_CHUNK_SIZE` (default: `128`) to prevent PyTorch CUDA Out-Of-Memory (OOM) GPU crashes.
   * Bulk data writes to isolated staging tables (`*_sync`). Once processing completes, a zero-downtime PyArrow-based table swap promotes the staging data to production and clears in-memory handle caches.
 * **Native Idempotent Deletions**: Deletion endpoints (`DELETE /sync/{domain}/{id}`) bypass the embedding engine entirely, executing direct LanceDB predicate purges to prevent orphaned vector nodes.
+* **Observability & Distributed Tracing**:
+  * Implements structured logging with configurable outputs (`console` human-readable or `json` machine-parseable format).
+  * Auto-injects and propagates `X-Request-ID` correlation headers across all endpoints for end-to-end trace context.
+  * Captures request duration ($ms$), HTTP metadata, and database vector execution metrics.
 
 ---
 
@@ -29,6 +33,7 @@ The microservice is built around clean architectural patterns to guarantee high 
 ```text
 AcademicGateway-AI/
 ├── api/                        # FastAPI boundary layer
+│   ├── middleware/             # Logging & request tracing middleware
 │   ├── routers/                # Endpoint definitions (/search, /sync)
 │   ├── dependencies.py         # Dependency injection containers
 │   └── main.py                 # FastAPI application entrypoint
@@ -41,6 +46,7 @@ AcademicGateway-AI/
 ├── infrastructure/             # Tech-stack implementations
 │   ├── config/                 # Pydantic environment configuration
 │   ├── embedding/              # Nomic-Embed-Text & PyTorch driver
+│   ├── logging/                # Centralized logging config & JSON formatters
 │   └── persistence/            # LanceDB vector client & repositories
 ├── tests/                      # Pytest suite (unit, integration, smoke, api)
 ├── docs/                       # OpenAPI specifications & schemas
@@ -60,8 +66,8 @@ AcademicGateway-AI/
 
 1. **Clone the repository:**
     ```bash
-       git clone https://github.com/YourOrg/AcademicGateway-AI.git
-       cd AcademicGateway-AI
+    git clone https://github.com/TarekMineRoyal/AcademicGateway-AI.git
+    cd AcademicGateway-AI
     ```
 2. **Create and activate a virtual environment:**
 
@@ -95,6 +101,8 @@ Environment settings are managed in `infrastructure/config/settings.py` via Pyda
 | `EMBEDDING_MODEL_NAME` | `nomic-ai/nomic-embed-text-v1.5` | Hugging Face model identifier for vector generation. |
 | `COMPUTE_DEVICE` | `cuda` | Target compute platform (`cuda` or `cpu`). |
 | `BATCH_CHUNK_SIZE` | `128` | Maximum array batch size processed per GPU iteration during bulk sync. |
+| `LOG_LEVEL` | `INFO` | Logging threshold (`DEBUG`, `INFO`, `WARNING`, `ERROR`). |
+| `LOG_FORMAT` | `console` | Logging output structure (`console` or `json`). |
 
 ---
 
@@ -106,7 +114,7 @@ To start the FastAPI server locally with auto-reload enabled:
 uvicorn api.main:app --reload --port 8000
 ```
 
-> **⏳ First-Run Warmup Note**
+> **⏳ First-Run Warmup Note**  
 > On the initial service boot, PyTorch and Hugging Face Transformers will automatically download the **`nomic-ai/nomic-embed-text-v1.5`** model weights (~500MB) into your local cache directory (`~/.cache/huggingface`). Startup time may take 30–60 seconds depending on network bandwidth. Subsequent startups will initialize instantaneously using local cached weights.
 
 The service will start at `http://localhost:8000`.
@@ -149,16 +157,16 @@ CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ### Build & Run Commands
 
-* **CPU Execution (Standard Container):**
+* **CPU Execution (Standard Container with JSON Logging):**
   ```bash
   docker build -t academic-gateway-ai .
-  docker run -d -p 8000:8000 -e COMPUTE_DEVICE=cpu --name gateway-ai academic-gateway-ai
+  docker run -d -p 8000:8000 -e COMPUTE_DEVICE=cpu -e LOG_FORMAT=json --name gateway-ai academic-gateway-ai
   ```
 
 * **GPU Execution (NVIDIA CUDA Acceleration):**
   > Requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host machine.
   ```bash
-  docker run -d -p 8000:8000 --gpus all -e COMPUTE_DEVICE=cuda --name gateway-ai academic-gateway-ai
+  docker run -d -p 8000:8000 --gpus all -e COMPUTE_DEVICE=cuda -e LOG_FORMAT=json --name gateway-ai academic-gateway-ai
   ```
 
 ---
@@ -182,7 +190,7 @@ pytest tests/api/
 # Persistence & Repository Integration Tests
 pytest tests/integration/
 
-# CQRS Unit Tests
+# CQRS & Logging Unit Tests
 pytest tests/unit/
 
 # Embeddings Smoke Tests
