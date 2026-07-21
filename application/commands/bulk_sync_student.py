@@ -57,10 +57,7 @@ class BulkSyncStudentCommandHandler:
     def handle(self, command: BulkSyncStudentCommand) -> None:
         """
         Executes the Blue/Green bulk synchronization workflow for student records.
-
-        Raises:
-            EmbeddingServiceException: If the batch embedding generation fails.
-            VectorRepositoryException: If persistence or table swapping fails.
+        Catches background exceptions internally to prevent corrupting ASGI HTTP streams.
         """
         total_items = len(command.items)
         if total_items == 0:
@@ -69,80 +66,87 @@ class BulkSyncStudentCommandHandler:
             )
             return
 
-        chunk_size = settings.BATCH_CHUNK_SIZE
-        total_chunks = (total_items + chunk_size - 1) // chunk_size
-        logger.info(
-            f"Starting bulk synchronization for {total_items} students across {total_chunks} chunk(s) (Chunk size: {chunk_size})"
-        )
-
-        # 1. Process items in VRAM-safe chunks to protect GPU memory
-        for i in range(0, total_items, chunk_size):
-            chunk = command.items[i : i + chunk_size]
-            chunk_num = (i // chunk_size) + 1
+        try:
+            chunk_size = settings.BATCH_CHUNK_SIZE
+            total_chunks = (total_items + chunk_size - 1) // chunk_size
             logger.info(
-                f"Processing chunk {chunk_num}/{total_chunks} ({len(chunk)} records) for bulk student sync."
+                f"Starting bulk synchronization for {total_items} students across {total_chunks} chunk(s) (Chunk size: {chunk_size})"
             )
 
-            chunk_students = [item.student for item in chunk]
-
-            # Map the pure formatter over the chunk
-            prose_documents = [
-                format_student_document(
-                    student=item.student,
-                    major_name=item.major_name,
-                    specialty_names=item.specialty_names,
-                    skill_names=item.skill_names,
+            # 1. Process items in VRAM-safe chunks to protect GPU memory
+            for i in range(0, total_items, chunk_size):
+                chunk = command.items[i : i + chunk_size]
+                chunk_num = (i // chunk_size) + 1
+                logger.info(
+                    f"Processing chunk {chunk_num}/{total_chunks} ({len(chunk)} records) for bulk student sync."
                 )
-                for item in chunk
-            ]
 
-            # Compute batch embeddings using PyTorch parallelization
+                chunk_students = [item.student for item in chunk]
+
+                # Map the pure formatter over the chunk
+                prose_documents = [
+                    format_student_document(
+                        student=item.student,
+                        major_name=item.major_name,
+                        specialty_names=item.specialty_names,
+                        skill_names=item.skill_names,
+                    )
+                    for item in chunk
+                ]
+
+                # Compute batch embeddings using PyTorch parallelization
+                try:
+                    logger.debug(
+                        f"Generating batch embeddings for chunk {chunk_num}/{total_chunks} ({len(chunk)} records)"
+                    )
+                    vectors = self._embedding_service.embed_documents_batch(prose_documents)
+                except Exception as ex:
+                    error_msg = f"Failed to generate batch embeddings for student chunk {chunk_num}/{total_chunks}."
+                    logger.error(f"{error_msg} Details: {str(ex)}")
+                    raise EmbeddingServiceException(error_msg) from ex
+
+                # Upsert batch into staging table
+                try:
+                    logger.debug(
+                        f"Upserting student chunk {chunk_num}/{total_chunks} into staging table '{self._staging_table_name}'"
+                    )
+                    self._staging_repository.bulk_upsert(chunk_students, vectors)
+                except Exception as ex:
+                    error_msg = (
+                        f"Failed to bulk upsert student chunk {chunk_num}/{total_chunks} into staging storage."
+                    )
+                    logger.error(f"{error_msg} Details: {str(ex)}")
+                    raise VectorRepositoryException(error_msg) from ex
+
+            # 2. Promote staging table to live table via Blue/Green swap
             try:
-                logger.debug(
-                    f"Generating batch embeddings for chunk {chunk_num}/{total_chunks} ({len(chunk)} records)"
+                logger.info(
+                    f"Promoting staging table '{self._staging_table_name}' to live production table '{self._live_table_name}'"
                 )
-                vectors = self._embedding_service.embed_documents_batch(prose_documents)
+                lancedb_client.swap_tables(self._staging_table_name, self._live_table_name)
             except Exception as ex:
-                error_msg = f"Failed to generate batch embeddings for student chunk {chunk_num}/{total_chunks}."
-                logger.error(f"{error_msg} Details: {str(ex)}")
-                raise EmbeddingServiceException(error_msg) from ex
-
-            # Upsert batch into staging table
-            try:
-                logger.debug(
-                    f"Upserting student chunk {chunk_num}/{total_chunks} into staging table '{self._staging_table_name}'"
-                )
-                self._staging_repository.bulk_upsert(chunk_students, vectors)
-            except Exception as ex:
-                error_msg = (
-                    f"Failed to bulk upsert student chunk {chunk_num}/{total_chunks} into staging storage."
-                )
+                error_msg = "Failed during Blue/Green table swap operation for students."
                 logger.error(f"{error_msg} Details: {str(ex)}")
                 raise VectorRepositoryException(error_msg) from ex
 
-        # 2. Promote staging table to live table via Blue/Green swap
-        try:
-            logger.info(
-                f"Promoting staging table '{self._staging_table_name}' to live production table '{self._live_table_name}'"
-            )
-            lancedb_client.swap_tables(self._staging_table_name, self._live_table_name)
-        except Exception as ex:
-            error_msg = "Failed during Blue/Green table swap operation for students."
-            logger.error(f"{error_msg} Details: {str(ex)}")
-            raise VectorRepositoryException(error_msg) from ex
+            # 3. Reload in-memory table handles across repository instances
+            try:
+                logger.info(
+                    "Invalidating in-memory cache for live student repository handle."
+                )
+                self._live_repository.reload_table()
+                self._staging_repository.reload_table()
+            except Exception as ex:
+                error_msg = "Failed to reload table cache for student repository after Blue/Green swap."
+                logger.error(f"{error_msg} Details: {str(ex)}")
+                raise VectorRepositoryException(error_msg) from ex
 
-        # 3. Reload in-memory table handles across repository instances
-        try:
             logger.info(
-                "Invalidating in-memory cache for live student repository handle."
+                f"Successfully completed Blue/Green bulk sync for {total_items} students."
             )
-            self._live_repository.reload_table()
-            self._staging_repository.reload_table()
-        except Exception as ex:
-            error_msg = "Failed to reload table cache for student repository after Blue/Green swap."
-            logger.error(f"{error_msg} Details: {str(ex)}")
-            raise VectorRepositoryException(error_msg) from ex
 
-        logger.info(
-            f"Successfully completed Blue/Green bulk sync for {total_items} students."
-        )
+        except Exception as ex:
+            logger.critical(
+                f"Bulk student synchronization background process failed: {str(ex)}",
+                exc_info=True,
+            )

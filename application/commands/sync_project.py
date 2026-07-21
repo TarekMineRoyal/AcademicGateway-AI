@@ -1,6 +1,6 @@
 import logging
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 from domain.models.project_template import ProjectTemplate
 from application.interfaces.embedding_service import IEmbeddingService
@@ -20,7 +20,11 @@ class SyncProjectCommand(BaseModel):
     Enriches relational keys with descriptive text labels at the source boundary
     to keep the vector engine decoupled from transactional databases.
     """
-    template: ProjectTemplate
+    template: ProjectTemplate = Field(
+        ...,
+        validation_alias=AliasChoices("project_template", "template"),
+        description="The nested project template blueprint payload.",
+    )
     major_name: Optional[str] = Field(default=None, description="The descriptive name of the aligned major.")
     specialty_name: Optional[str] = Field(default=None, description="The descriptive name of the concentration track.")
     skill_names: List[str] = Field(default_factory=list, description="Text labels of required competencies.")
