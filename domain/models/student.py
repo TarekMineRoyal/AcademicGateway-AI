@@ -10,9 +10,7 @@ class Student(BaseModel):
     """
     id: uuid.UUID
     full_name: str
-    major_id: uuid.UUID
+    major_id: Optional[uuid.UUID] = Field(default=None, description="Primary major UUID if assigned.")
     specialty_ids: List[uuid.UUID] = Field(default_factory=list)
     skill_ids: List[uuid.UUID] = Field(default_factory=list)
-
-    # The goldmine field for our Nomic-powered semantic text chunks
     about_me: Optional[str] = Field(default=None, description="Aspirational summary or biography text.")

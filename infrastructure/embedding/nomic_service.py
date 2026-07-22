@@ -1,4 +1,5 @@
 import logging
+import threading
 from typing import List
 from sentence_transformers import SentenceTransformer
 
@@ -17,6 +18,7 @@ class NomicEmbeddingService(IEmbeddingService):
 
     def __init__(self, model_name: str = settings.NOMIC_MODEL_NAME):
         self._model_name = model_name
+        self._lock = threading.Lock()
         logger.info(
             f"Initializing Nomic embedding model '{self._model_name}' on compute device '{settings.COMPUTE_DEVICE}'"
         )
@@ -38,7 +40,8 @@ class NomicEmbeddingService(IEmbeddingService):
         """Generates a local vector embedding optimized for document ingestion."""
         try:
             prefixed_text = f"{settings.DOC_PREFIX}{text}"
-            embeddings = self._model.encode([prefixed_text], normalize_embeddings=True)
+            with self._lock:
+                embeddings = self._model.encode([prefixed_text], normalize_embeddings=True)
             return embeddings[0].tolist()
         except Exception as ex:
             logger.error(f"Error generating document embedding: {ex}")
@@ -54,7 +57,8 @@ class NomicEmbeddingService(IEmbeddingService):
 
         try:
             prefixed_texts = [f"{settings.DOC_PREFIX}{t}" for t in texts]
-            embeddings = self._model.encode(prefixed_texts, normalize_embeddings=True)
+            with self._lock:
+                embeddings = self._model.encode(prefixed_texts, normalize_embeddings=True)
             logger.info(f"Successfully generated batch embeddings for {batch_size} documents.")
             return embeddings.tolist()
         except Exception as ex:
@@ -65,7 +69,8 @@ class NomicEmbeddingService(IEmbeddingService):
         """Generates a local vector embedding optimized for similarity search queries."""
         try:
             prefixed_text = f"{settings.QUERY_PREFIX}{text}"
-            embeddings = self._model.encode([prefixed_text], normalize_embeddings=True)
+            with self._lock:
+                embeddings = self._model.encode([prefixed_text], normalize_embeddings=True)
             return embeddings[0].tolist()
         except Exception as ex:
             logger.error(f"Error generating query embedding: {ex}")

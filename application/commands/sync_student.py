@@ -1,6 +1,6 @@
 import logging
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 from domain.models.student import Student
 from application.interfaces.embedding_service import IEmbeddingService
@@ -20,9 +20,9 @@ class SyncStudentCommand(BaseModel):
     Enriches relational keys with descriptive text names at the boundary source.
     """
     student: Student
-    major_name: str
-    specialty_names: List[str] = Field(default_factory=list)
-    skill_names: List[str] = Field(default_factory=list)
+    major_name: Optional[str] = Field(default="Undeclared", description="Human-readable major name.")
+    specialty_names: Optional[List[str]] = Field(default_factory=list)
+    skill_names: Optional[List[str]] = Field(default_factory=list)
 
 
 class SyncStudentCommandHandler:
