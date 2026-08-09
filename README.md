@@ -66,7 +66,7 @@ AcademicGateway-AI/
 
 1. **Clone the repository:**
     ```bash
-    git clone https://github.com/TarekMineRoyal/AcademicGateway-AI.git
+    git clone [https://github.com/TarekMineRoyal/AcademicGateway-AI.git](https://github.com/TarekMineRoyal/AcademicGateway-AI.git)
     cd AcademicGateway-AI
     ```
 2. **Create and activate a virtual environment:**
@@ -210,7 +210,9 @@ When running locally, FastAPI generates interactive OpenAPI documentation at [ht
 
 | Repository | Description |
 | :--- | :--- |
-| **[AcademicGateway-Backend](https://github.com/TarekMineRoyal/AcademicGateway-Backend)** | Primary web application and backend platform. |
+| **[AcademicGateway](https://github.com/TarekMineRoyal/AcademicGateway)** | Master documentation hub and system architecture blueprints. |
+| **[AcademicGateway-Backend](https://github.com/TarekMineRoyal/AcademicGateway-Backend)** | Primary web application, business logic, and relational backend API. |
+| **[AcademicGateway-Frontend](https://github.com/TarekMineRoyal/AcademicGateway-Frontend)** | User Web Application & UI client. |
 | **[AcademicGateway-AI](https://github.com/TarekMineRoyal/AcademicGateway-AI)** | Vector search and semantic matchmaking microservice *(this repository)*. |
 
 ---
@@ -221,6 +223,6 @@ This microservice is one component of the broader **AcademicGateway** platform:
 
 | Repository | Role | Direct Connection to this Service? |
 | :--- | :--- | :--- |
-| **[AcademicGateway-Backend](https://github.com/TarekMineRoyal/AcademicGateway-Backend)** | Main Application & Core API | **Yes** — Sends `/sync` requests and executes `/search` queries. |
-| **[AcademicGateway-Frontend](https://github.com/TarekMineRoyal/AcademicGateway-Frontend)** | User Interface | **No** — Interacts solely with the main application. |
+| **[AcademicGateway-Backend](https://github.com/TarekMineRoyal/AcademicGateway-Backend)** | Core API & Business State | **Yes** — Sends `/sync` requests and executes `/search` queries. |
+| **[AcademicGateway-Frontend](https://github.com/TarekMineRoyal/AcademicGateway-Frontend)** | User Web Application | **No** — Interacts solely with the backend API. |
 | **[AcademicGateway-AI](https://github.com/TarekMineRoyal/AcademicGateway-AI)** | Vector Search Microservice | *(This repository)* |
